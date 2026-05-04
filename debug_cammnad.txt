@@ -1,0 +1,22 @@
+Debug Commands (browser console)
+เปิด DevTools แล้วพิมพ์:
+
+Command	ทำอะไร
+debug.money(200)	เพิ่มเงินให้ตัวเอง 200
+debug.pokemon("charizard")	รับ Charizard (หรือ id อื่นจาก pokemon.json)
+debug.pokemon()	รับ pokemon สุ่ม
+debug.item("great_ball")	รับ great_ball
+debug.tp(13)	ย้ายไปช่อง 13 (Misty's gym)
+debug.tile()	trigger event ของช่องที่ยืนอยู่
+debug.turn()	บังคับให้เป็นเทิร์นของตัวเอง
+debug.faint()	faint โปเกมอนทั้งหมด
+debug.revive()	ฟื้นโปเกมอนทั้งหมด
+debug.clear()	ล้าง pending state → เดินเทิร์นต่อ
+debug.state()	ดู state ปัจจุบันใน console
+debug.ball(3)   // ได้ poke_ball 3 ใบ
+debug.gball(2)  // ได้ great_ball 2 ใบ
+debug.players() // ดูรายชื่อผู้เล่นก่อน (ดู index, pid, ชื่อ)
+debug.fight(0) // สู้กับผู้เล่นคนที่ 0 (ใช้ index)
+debug.fight("Alice") // สู้กับ "Alice" (ใช้ชื่อ ไม่ต้องแม่นพิมพ์ใหญ่เล็ก)
+debug.fight("a1b2c3d4") // สู้กับ pid โดยตรง
+debug.fight("Alice", "myPidHere") // กำหนด attacker ด้วย (สู้แทน pid อื่น)

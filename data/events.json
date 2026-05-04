@@ -1,0 +1,14 @@
+[
+  { "id": "lucky_coin",    "text": "พบเหรียญโบราณ! ได้รับเงิน 8",          "money_delta": 8,   "skip_turns": 0, "teleport": null },
+  { "id": "storm",         "text": "พายุพัดมา! หยุด 1 เทิร์น",             "money_delta": 0,   "skip_turns": 1, "teleport": null },
+  { "id": "market",        "text": "ตลาดโปเกมอน! ได้รับเงิน 5",            "money_delta": 5,   "skip_turns": 0, "teleport": null },
+  { "id": "tax",           "text": "เสียภาษีโปเกลีก! เสียเงิน 6",          "money_delta": -6,  "skip_turns": 0, "teleport": null },
+  { "id": "shortcut",      "text": "พบทางลัด! เดินทางกลับไปช่อง 0",       "money_delta": 0,   "skip_turns": 0, "teleport": 0   },
+  { "id": "festival",      "text": "เทศกาลโปเกมอน! ได้รับเงิน 12",        "money_delta": 12,  "skip_turns": 0, "teleport": null },
+  { "id": "sleep",         "text": "โดนหลับ! หยุด 2 เทิร์น",              "money_delta": 0,   "skip_turns": 2, "teleport": null },
+  { "id": "theft",         "text": "โดนขโมย! เสียเงิน 4",                  "money_delta": -4,  "skip_turns": 0, "teleport": null },
+  { "id": "berry_find",    "text": "พบ Berry หายาก! ได้รับเงิน 6",        "money_delta": 6,   "skip_turns": 0, "teleport": null },
+  { "id": "hm_flash",      "text": "HM Flash! ข้ามเทิร์น 1",              "money_delta": 0,   "skip_turns": 1, "teleport": null },
+  { "id": "professor",     "text": "พบศาสตราจารย์! ได้รับเงิน 10",       "money_delta": 10,  "skip_turns": 0, "teleport": null },
+  { "id": "pokeflute",     "text": "ได้ยิน Poké Flute! ตื่นขึ้นมาทันที", "money_delta": 0,   "skip_turns": 0, "teleport": null }
+]

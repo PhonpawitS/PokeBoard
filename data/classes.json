@@ -1,0 +1,42 @@
+[
+  {
+    "id": "trainer",
+    "name": "เทรนเนอร์",
+    "ability_id": "atk_bonus",
+    "ability_params": { "bonus": 2 },
+    "ability_desc": "ATK+2 ในการต่อสู้ทุกครั้ง",
+    "item_limit": 4,
+    "starter_items": ["poke_ball", "poke_ball"],
+    "starter_pokemon": ["pikachu"]
+  },
+  {
+    "id": "rocket",
+    "name": "แก๊งร็อกเก็ต",
+    "ability_id": "steal_on_win",
+    "ability_params": {},
+    "ability_desc": "ขโมยโปเกมอน 1 ตัวเมื่อชนะ PvP",
+    "item_limit": 4,
+    "starter_items": ["poke_ball", "great_ball"],
+    "starter_pokemon": ["ekans"]
+  },
+  {
+    "id": "scientist",
+    "name": "นักวิทยาศาสตร์",
+    "ability_id": "research_anywhere",
+    "ability_params": {},
+    "ability_desc": "ส่งวิจัยได้ทุกเทิร์น ไม่ต้องจอด",
+    "item_limit": 4,
+    "starter_items": ["poke_ball", "poke_ball"],
+    "starter_pokemon": ["porygon"]
+  },
+  {
+    "id": "collector",
+    "name": "นักสะสม",
+    "ability_id": "extra_item_slots",
+    "ability_params": { "limit": 6 },
+    "ability_desc": "ถือไอเทมได้สูงสุด 6 ใบ",
+    "item_limit": 6,
+    "starter_items": ["poke_ball", "poke_ball", "great_ball"],
+    "starter_pokemon": ["eevee"]
+  }
+]

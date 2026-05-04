@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environment
+venv/
+.venv/
+env/
+.env/
+
+# Environment variables
+.env
+.env.*
+*.local
+
+# Flask / runtime
+instance/
+.flask_session/
+
+# IDE
+.vscode/
+.idea/
+*.suo
+*.user
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Claude Code (local settings may contain personal tokens)
+.claude/settings.local.json
+
+# Logs
+*.log
+
+# Distribution
+htmlcov/
+.coverage
+.pytest_cache/

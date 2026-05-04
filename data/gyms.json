@@ -1,0 +1,9 @@
+[
+  { "id": "brock",    "name": "Brock",     "badge": "Boulder Badge", "atk": 4,  "reward": 10, "pokemon_name": "Onix",     "pokemon_sprite_id": 95  },
+  { "id": "misty",    "name": "Misty",     "badge": "Cascade Badge", "atk": 6,  "reward": 14, "pokemon_name": "Starmie",  "pokemon_sprite_id": 121 },
+  { "id": "surge",    "name": "Lt. Surge", "badge": "Thunder Badge", "atk": 8,  "reward": 18, "pokemon_name": "Raichu",   "pokemon_sprite_id": 26  },
+  { "id": "erika",    "name": "Erika",     "badge": "Rainbow Badge", "atk": 10, "reward": 22, "pokemon_name": "Vileplume","pokemon_sprite_id": 45  },
+  { "id": "sabrina",  "name": "Sabrina",   "badge": "Marsh Badge",   "atk": 14, "reward": 32, "pokemon_name": "Alakazam", "pokemon_sprite_id": 65  },
+  { "id": "blaine",   "name": "Blaine",    "badge": "Volcano Badge", "atk": 16, "reward": 40, "pokemon_name": "Arcanine", "pokemon_sprite_id": 59  },
+  { "id": "giovanni", "name": "Giovanni",  "badge": "Earth Badge",   "atk": 20, "reward": 50, "pokemon_name": "Mewtwo",   "pokemon_sprite_id": 150 }
+]

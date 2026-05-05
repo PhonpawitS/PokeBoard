@@ -11,7 +11,8 @@ routes_bp = Blueprint("routes", __name__)
 @routes_bp.route("/")
 def index():
     classes = loader.get("classes")
-    return render_template("index.html", classes=classes)
+    items = loader.get("items")
+    return render_template("index.html", classes=classes, items=items)
 
 
 @routes_bp.route("/api/create_room", methods=["POST"])

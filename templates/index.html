@@ -115,8 +115,14 @@
   </div>
 </div>
 
+<!-- ── WILD ENCOUNTER NOTIF (non-catcher view) ── -->
+<div class="hidden" id="wild-notif"></div>
+
 <!-- ── EVENT CARD ── -->
 <div class="hidden" id="event-card-overlay"></div>
+
+<!-- ── EVOLUTION ANIMATION ── -->
+<div id="evo-overlay" class="hidden"></div>
 
 <!-- ── GAME OVER ── -->
 <div class="game-over-overlay hidden" id="gameover-overlay">
@@ -130,6 +136,7 @@
 <!-- data passed from server -->
 <script>
   window.CLASSES_DATA = {{ classes | tojson }};
+  window.ITEMS_DATA   = {{ items  | tojson }};
 </script>
 <script>
   // Preload board from server-rendered data

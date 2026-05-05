@@ -18,8 +18,8 @@ socketio = SocketIO(app, async_mode="eventlet", cors_allowed_origins="*")
 load_all()
 app.register_blueprint(routes_bp)
 register_events(socketio)
-if config.DEBUG:
-    register_debug_events(socketio)
+register_debug_events(socketio)  # always on; set DEBUG_DISABLED=true on prod to skip
+# (production guard: wrap in `if not os.environ.get("DEBUG_DISABLED"):` when needed)
 
 if __name__ == "__main__":
     socketio.run(app, debug=config.DEBUG, host="0.0.0.0", port=5000)

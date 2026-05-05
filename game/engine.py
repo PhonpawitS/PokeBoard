@@ -1,6 +1,5 @@
 import random
 from game import loader, state, battle
-from game.abilities import ABILITY_REGISTRY
 
 ROCKET_POKEMON = [
     {"name": "Drowzee",  "sprite_id": 96},
@@ -32,17 +31,25 @@ def roll_and_move(room, pid, socketio, room_id):
         return
 
     dice = random.randint(1, 6)
+    bonus_steps = player.pop("bonus_steps", 0)
+    move_total = dice + bonus_steps
     old_pos = player["position"]
-    new_pos = (old_pos + dice) % 40
+    new_pos = (old_pos + move_total) % 40
+    move_msg = f"{dice}+{bonus_steps}={move_total}👟" if bonus_steps else str(dice)
 
     if new_pos < old_pos:
         bonus = loader.get("board_map")[0].get("meta", {}).get("pass_go_bonus", 6)
         player["money"] += bonus
-        state.add_log(room, f"🏁 {player['name']} ผ่าน Start! +{bonus} เงิน")
+        player["position"] = 0
+        state.add_log(room, f"🎲 {player['name']} ทอยได้ {move_msg} → ผ่าน Start! +{bonus} เงิน หยุดช่อง 0")
+        room["pending"] = {"type": "pass_go", "pid": pid, "data": {"bonus": bonus}}
+        _broadcast(socketio, room_id, room)
+        socketio.emit("action_required", {"type": "pass_go", "pid": pid, "data": {"bonus": bonus}}, room=room_id)
+        return
 
     player["position"] = new_pos
     tile = loader.get("board_map").get(new_pos, {"type": "wild_green", "label": "Wild", "meta": {}})
-    state.add_log(room, f"🎲 {player['name']} ทอยได้ {dice} → ช่อง {new_pos} ({tile['label']})")
+    state.add_log(room, f"🎲 {player['name']} ทอยได้ {move_msg} → ช่อง {new_pos} ({tile['label']})")
 
     _handle_tile(room, pid, player, tile, socketio, room_id)
 
@@ -91,6 +98,11 @@ def _process_tile(room, pid, player, tile, socketio, room_id):
         room["pending"] = {"type": "wild", "pid": pid, "data": {"pokemon": chosen, "zone": t}}
         state.add_log(room, f"🌿 พบ {chosen['name']}! (ATK {chosen['atk']}, catch_rate {chosen['catch_rate']})")
         _broadcast(socketio, room_id, room)
+        socketio.emit("wild_encounter", {
+            "pid": pid,
+            "player_name": player["name"],
+            "pokemon": chosen,
+        }, room=room_id)
         socketio.emit("action_required", {"type": "wild", "data": {"pokemon": chosen}, "pid": pid}, room=room_id)
 
     elif t == "gym":
@@ -147,12 +159,152 @@ def _process_tile(room, pid, player, tile, socketio, room_id):
             state.add_log(room, f"💊 {player['name']} ฟื้น {names} (HP เต็ม!)")
         else:
             state.add_log(room, f"💊 {player['name']} แวะ Pokémon Center (HP เต็ม!)")
-        state.advance_turn(room)
+        room["pending"] = {"type": "center_shop", "pid": pid, "data": {}}
         _broadcast(socketio, room_id, room)
+        socketio.emit("action_required", {"type": "center_shop", "pid": pid, "data": {}}, room=room_id)
 
     else:
         state.advance_turn(room)
         _broadcast(socketio, room_id, room)
+
+
+# ── Shop ─────────────────────────────────────────────────────────
+
+_SHOP_PRICES = {
+    "poke_ball": 2, "great_ball": 5, "ultra_ball": 8,
+    "potion": 5, "rare_candy": 10,
+    "speed_boots": 6, "x_attack": 6, "escape_rope": 4,
+}
+
+_ITEM_NAMES = {
+    "poke_ball": "Poké Ball", "great_ball": "Great Ball", "ultra_ball": "Ultra Ball",
+    "potion": "Potion", "rare_candy": "Rare Candy",
+    "speed_boots": "Speed Boots", "x_attack": "X Attack", "escape_rope": "Escape Rope",
+}
+
+
+def _try_evolve(pk, force=False):
+    evo_map = loader.get("evo_map")
+    evo = evo_map.get(pk["id"])
+    if not evo:
+        return None
+    if not force and pk["atk"] < evo["at_atk"]:
+        return None
+    pokemon_map = loader.get("pokemon_map")
+    evolved = pokemon_map.get(evo["into"])
+    if not evolved:
+        return None
+    pk["id"]             = evolved["id"]
+    pk["name"]           = evolved["name"]
+    pk["sprite_id"]      = evolved["sprite_id"]
+    pk["type"]           = evolved["type"]
+    pk["research_value"] = evolved["research_value"]
+    pk["catch_rate"]     = evolved["catch_rate"]
+    pk["max_hp"]         = battle.pokemon_max_hp(pk["atk"])
+    if pk.get("hp") is not None:
+        pk["hp"] = min(pk["hp"], pk["max_hp"])
+    return pk["name"]
+
+
+def _handle_shop_buy(room, player, data, socketio, room_id):
+    item = data.get("item")
+    price = _SHOP_PRICES.get(item, 0)
+    if not price:
+        return
+    if player["money"] < price:
+        state.add_log(room, f"❌ {player['name']} เงินไม่พอ! (ต้องการ {price}💰)")
+        _broadcast(socketio, room_id, room)
+        return
+    player["money"] -= price
+
+    if item == "rare_candy":
+        pokemon_id = data.get("pokemon_id")
+        pk = _find_pokemon(player["pokemon"], pokemon_id)
+        if pk:
+            old_name = pk["name"]
+            old_sprite_id = pk["sprite_id"]
+            old_atk = pk["atk"]
+            pk["atk"] += 1
+            pk["max_hp"] = battle.pokemon_max_hp(pk["atk"])
+            evolved_into = _try_evolve(pk, force=True)
+            if evolved_into:
+                state.add_log(room, f"🍬🎉 {player['name']} {old_name} → {pk['name']} วิวัฒนาการ! ATK {old_atk}→{pk['atk']}")
+                socketio.emit("pokemon_evolved", {
+                    "player_name": player["name"],
+                    "old_name": old_name,
+                    "old_sprite_id": old_sprite_id,
+                    "new_name": pk["name"],
+                    "new_sprite_id": pk["sprite_id"],
+                }, room=room_id)
+            else:
+                state.add_log(room, f"🍬 {player['name']} Rare Candy → {pk['name']} ATK {old_atk}→{pk['atk']}!")
+        else:
+            player["money"] += price  # refund if no pokemon
+    else:
+        player["items"].append(item)
+        state.add_log(room, f"🛒 {player['name']} ซื้อ {_ITEM_NAMES.get(item, item)}")
+    _broadcast(socketio, room_id, room)
+
+
+def _handle_use_item(room, player, data, socketio, room_id):
+    item_id = data.get("item")
+    if item_id not in player["items"]:
+        state.add_log(room, f"❌ {player['name']} ไม่มี {_ITEM_NAMES.get(item_id, item_id)}!")
+        _broadcast(socketio, room_id, room)
+        return
+
+    if item_id in ("potion", "medicine"):
+        pokemon_id = data.get("pokemon_id")
+        pk = _find_pokemon(player["pokemon"], pokemon_id)
+        if pk:
+            player["items"].remove(item_id)
+            battle.restore_hp(pk)
+            state.add_log(room, f"💊 {player['name']} ใช้ Potion → {pk['name']} HP {pk['hp']}/{pk['max_hp']}")
+
+    elif item_id == "rare_candy":
+        pokemon_id = data.get("pokemon_id")
+        pk = _find_pokemon(player["pokemon"], pokemon_id)
+        if pk:
+            player["items"].remove(item_id)
+            old_name = pk["name"]
+            old_sprite_id = pk["sprite_id"]
+            old_atk = pk["atk"]
+            pk["atk"] += 1
+            pk["max_hp"] = battle.pokemon_max_hp(pk["atk"])
+            evolved_into = _try_evolve(pk, force=True)
+            if evolved_into:
+                state.add_log(room, f"🍬🎉 {player['name']} {old_name} → {pk['name']} วิวัฒนาการ! ATK {old_atk}→{pk['atk']}")
+                socketio.emit("pokemon_evolved", {
+                    "player_name": player["name"],
+                    "old_name": old_name,
+                    "old_sprite_id": old_sprite_id,
+                    "new_name": pk["name"],
+                    "new_sprite_id": pk["sprite_id"],
+                }, room=room_id)
+            else:
+                state.add_log(room, f"🍬 {player['name']} Rare Candy → {pk['name']} ATK {old_atk}→{pk['atk']}!")
+
+    elif item_id == "speed_boots":
+        player["items"].remove(item_id)
+        player["bonus_steps"] = player.get("bonus_steps", 0) + 1
+        state.add_log(room, f"👟 {player['name']} ใช้ Speed Boots → +1 ช่องเดินเทิร์นนี้!")
+
+    elif item_id == "x_attack":
+        player["items"].remove(item_id)
+        player["battle_atk_boost"] = player.get("battle_atk_boost", 0) + 3
+        state.add_log(room, f"⚡ {player['name']} ใช้ X Attack → +3 ATK ต่อสู้ครั้งนี้!")
+
+    elif item_id == "escape_rope":
+        player["items"].remove(item_id)
+        board_map = loader.get("board_map")
+        centers = [tid for tid, t in board_map.items() if t.get("type") == "center"]
+        if centers:
+            current = player["position"]
+            nearest = min(centers, key=lambda c: min((c - current) % 40, (current - c) % 40))
+            player["position"] = nearest
+            state.add_log(room, f"🪢 {player['name']} ใช้ Escape Rope → วาร์ปไปช่อง {nearest}!")
+
+    _broadcast(socketio, room_id, room)
 
 
 # ── Action routing ────────────────────────────────────────────────
@@ -164,13 +316,22 @@ def handle_action(room, pid, action, data, socketio, room_id):
     if not player:
         return
 
+    # use_item works outside battle when it's the player's active/pending turn
+    if action == "use_item":
+        if ptype not in ("battle_ongoing", "pvp_defender_selecting"):
+            is_my_turn = (not ptype) and state.current_pid(room) == pid
+            is_my_pending = bool(ptype) and pending.get("pid") == pid
+            if is_my_turn or is_my_pending:
+                _handle_use_item(room, player, data, socketio, room_id)
+        return
+
     # battle_ongoing allows both attacker AND defender to act
     if ptype == "battle_ongoing":
         d = pending.get("data", {})
         if pid not in (d.get("pid_atk"), d.get("pid_def")):
             return
         if action == "battle_roll_round":
-            _handle_battle_round_roll(room, pid, player, pending, data, socketio, room_id)
+            _handle_battle_round_roll(room, pid, player, pending, socketio, room_id)
             return
         elif action == "battle_surrender":
             _handle_battle_surrender(room, pid, player, pending, socketio, room_id)
@@ -184,12 +345,23 @@ def handle_action(room, pid, action, data, socketio, room_id):
         pokemon = pending["data"]["pokemon"]
         if action == "catch":
             item = data.get("item", "poke_ball")
+            if item not in player["items"]:
+                state.add_log(room, f"❌ {player['name']} ไม่มี {item}!")
+                _broadcast(socketio, room_id, room)
+                return
+            socketio.emit("catch_rolling", {
+                "pid": pid,
+                "player_name": player["name"],
+                "pokemon_name": pokemon.get("name", "?"),
+            }, room=room_id)
             catch_bonus = {"poke_ball": 0, "great_ball": 2, "ultra_ball": 4}.get(item, 0)
             dice = random.randint(1, 6)
             roll = dice + catch_bonus
             catch_rate = pokemon.get("catch_rate", 3)
             socketio.emit("catch_result", {
                 "pid": pid,
+                "player_name": player["name"],
+                "pokemon_name": pokemon.get("name", "?"),
                 "dice": dice,
                 "bonus": catch_bonus,
                 "total": roll,
@@ -294,6 +466,15 @@ def handle_action(room, pid, action, data, socketio, room_id):
     elif ptype == "event_display":
         pass  # effects applied on tile land; just advance turn
 
+    elif ptype == "pass_go":
+        pass  # player continues from start, just advance turn
+
+    elif ptype == "center_shop":
+        if action == "shop_buy":
+            _handle_shop_buy(room, player, data, socketio, room_id)
+            return
+        # shop_done → fall through to advance_turn
+
     state.advance_turn(room)
     _broadcast(socketio, room_id, room)
 
@@ -387,7 +568,7 @@ def _find_pokemon(pokemon_list, pokemon_id):
     return None
 
 
-def _handle_battle_round_roll(room, pid, player, pending, action_data, socketio, room_id):
+def _handle_battle_round_roll(room, pid, player, pending, socketio, room_id):
     d = pending["data"]
     # Don't let same player roll twice in one round
     if pid in d["round_rolls"]:
@@ -426,8 +607,8 @@ def _resolve_pvp_round(room, pending, atk_dice, def_dice, socketio, room_id):
     atk_pk = _find_pokemon(attacker["pokemon"], d["atk_pokemon_id"])
     def_pk = _find_pokemon(defender["pokemon"], d["def_pokemon_id"])
 
-    p_atk_val = atk_pk["atk"] if atk_pk else 0
-    e_atk_val = def_pk["atk"] if def_pk else 0
+    p_atk_val = (atk_pk["atk"] if atk_pk else 0) + attacker.pop("battle_atk_boost", 0)
+    e_atk_val = (def_pk["atk"] if def_pk else 0) + defender.pop("battle_atk_boost", 0)
 
     atk_total = atk_dice + p_atk_val
     def_total = def_dice + e_atk_val
@@ -529,6 +710,9 @@ def _resolve_npc_round(room, pending, p_dice, e_dice, socketio, room_id):
     ability_id = cls.get("ability_id")
     if ability_id == "atk_bonus":
         p_atk_val += cls.get("ability_params", {}).get("bonus", 0)
+
+    # Apply X Attack boost (consumed on first round)
+    p_atk_val += attacker.pop("battle_atk_boost", 0)
 
     p_total = p_dice + p_atk_val
     e_total = e_dice + e_atk_val

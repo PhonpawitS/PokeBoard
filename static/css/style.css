@@ -733,6 +733,126 @@ header {
   100% { transform: scale(1)   rotate(0deg);                }
 }
 
+/* ── SHOP ── */
+.shop-money {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: .9rem;
+  font-weight: 600;
+  background: linear-gradient(90deg, #e8f5e9, #f1f8e9);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  border: 1px solid #c8e6c9;
+}
+
+/* grid layout for buy shop */
+.shop-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.shop-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  padding: 10px 8px;
+  border-radius: 12px;
+  background: #f5f7ff;
+  border: 1.5px solid #dde3f5;
+  cursor: pointer;
+  transition: box-shadow .15s, border-color .15s, transform .1s;
+  position: relative;
+}
+.shop-card:not(.shop-disabled):hover {
+  border-color: #7986cb;
+  box-shadow: 0 3px 10px #7986cb33;
+  transform: translateY(-1px);
+}
+.shop-card.shop-disabled { opacity: .42; cursor: not-allowed; }
+
+.shop-card-icon {
+  width: 48px; height: 48px;
+  display: flex; align-items: center; justify-content: center;
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #e0e4f0;
+  box-shadow: 0 1px 4px #0001;
+  font-size: 1.6rem;
+}
+.shop-card-name  { font-weight: 700; font-size: .8rem; line-height: 1.1; }
+.shop-card-desc  { font-size: .66rem; color: #888; line-height: 1.2; }
+.shop-card-price { font-weight: 800; font-size: .82rem; color: #2e7d32; }
+.shop-card-price-na { font-size: .72rem; color: #e53935; font-weight: 700; }
+
+/* horizontal row — used in use-item modal */
+.shop-list { display: flex; flex-direction: column; gap: 6px; }
+
+.shop-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: #f8f9ff;
+  border: 1.5px solid #e0e4f5;
+  transition: border-color .12s, box-shadow .12s;
+}
+.shop-row[onclick]:hover {
+  border-color: #7986cb;
+  box-shadow: 0 2px 8px #7986cb22;
+  cursor: pointer;
+}
+
+.shop-disabled { opacity: .42; }
+.shop-icon { font-size: 1.5rem; flex-shrink: 0; width: 34px; text-align: center; }
+.shop-info { flex: 1; min-width: 0; }
+.shop-name { font-weight: 700; font-size: .86rem; }
+.shop-desc { font-size: .7rem; color: #888; }
+
+.shop-price {
+  font-weight: 700;
+  font-size: .86rem;
+  color: #2e7d32;
+  white-space: nowrap;
+  margin-right: 4px;
+}
+
+/* ── WILD ENCOUNTER NOTIF ── */
+#wild-notif {
+  position: fixed;
+  bottom: 80px;
+  right: 16px;
+  z-index: 1200;
+  animation: slideInRight .25s ease;
+}
+@keyframes slideInRight {
+  from { transform: translateX(120%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+.wild-notif-box {
+  background: linear-gradient(135deg, #1b3a1b, #2e5e2e);
+  color: #fff;
+  border-radius: 14px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 18px #0005;
+  border: 1.5px solid #4caf5077;
+  min-width: 200px;
+  max-width: 260px;
+}
+.wild-notif-sprite { width: 52px; height: 52px; image-rendering: pixelated; }
+.wild-notif-info   { flex: 1; min-width: 0; }
+.wild-notif-who    { font-size: .7rem; opacity: .75; }
+.wild-notif-name   { font-weight: 800; font-size: 1rem; }
+.wild-notif-atk    { font-size: .72rem; opacity: .8; }
+
 /* ── EVENT CARD ── */
 #event-card-overlay {
   position: fixed;
@@ -837,4 +957,126 @@ header {
 
 .battle-sprite.taking-hit {
   animation: hit-flash .45s ease, hit-shake .45s ease;
+}
+
+/* ── EVOLUTION OVERLAY ── */
+#evo-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2500;
+  background: radial-gradient(ellipse at center, rgba(255,230,50,.3) 0%, rgba(0,0,0,.82) 100%);
+  animation: evo-bg-pulse .9s ease-in-out infinite alternate;
+}
+
+@keyframes evo-bg-pulse {
+  from { background: radial-gradient(ellipse at center, rgba(255,230,50,.3) 0%, rgba(0,0,0,.82) 100%); }
+  to   { background: radial-gradient(ellipse at center, rgba(255,255,255,.45) 0%, rgba(0,0,40,.9) 100%); }
+}
+
+.evo-card {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  border: 2px solid rgba(255,220,50,.65);
+  border-radius: 22px;
+  padding: 30px 42px;
+  text-align: center;
+  box-shadow: 0 0 50px rgba(255,220,50,.35), 0 12px 40px rgba(0,0,0,.65);
+  animation: evo-card-in .4s cubic-bezier(.34,1.56,.64,1) both;
+  min-width: 300px;
+}
+
+@keyframes evo-card-in {
+  from { transform: scale(.6); opacity: 0; }
+  to   { transform: scale(1);  opacity: 1; }
+}
+
+.evo-header {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #ffe066;
+  letter-spacing: 3px;
+  text-shadow: 0 0 16px rgba(255,220,50,.8);
+  margin-bottom: 6px;
+}
+
+.evo-player {
+  font-size: .88rem;
+  color: #90caf9;
+  margin-bottom: 18px;
+}
+
+.evo-sprites {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.evo-sprite-old img,
+.evo-sprite-old span {
+  display: block;
+  image-rendering: pixelated;
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  animation: evo-old-out .8s ease-in forwards;
+  animation-delay: .6s;
+}
+
+.evo-sprite-new img,
+.evo-sprite-new span {
+  display: block;
+  image-rendering: pixelated;
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  opacity: 0;
+  animation: evo-new-in .9s ease-out forwards;
+  animation-delay: .6s;
+  filter: drop-shadow(0 0 14px rgba(255,220,50,.9));
+}
+
+@keyframes evo-old-out {
+  0%   { transform: scale(1);   opacity: 1; filter: brightness(1); }
+  50%  { transform: scale(1.2); opacity: 1; filter: brightness(4) saturate(0); }
+  100% { transform: scale(.5);  opacity: 0; }
+}
+
+@keyframes evo-new-in {
+  0%   { transform: scale(.5);  opacity: 0; filter: brightness(5) saturate(0); }
+  60%  { transform: scale(1.2); opacity: 1; filter: brightness(2.5) drop-shadow(0 0 18px gold); }
+  100% { transform: scale(1);   opacity: 1; filter: drop-shadow(0 0 8px rgba(255,220,50,.7)); }
+}
+
+.evo-arrow {
+  font-size: 2rem;
+  color: #ffe066;
+  font-weight: 900;
+  animation: evo-arrow-pulse .55s ease-in-out infinite alternate;
+}
+
+@keyframes evo-arrow-pulse {
+  from { opacity: .4; transform: scaleX(.8); }
+  to   { opacity: 1;  transform: scaleX(1.2); }
+}
+
+.evo-names {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.evo-old-name {
+  color: #888;
+  text-decoration: line-through;
+  font-size: .9rem;
+}
+
+.evo-new-name {
+  color: #ffe066;
+  font-size: 1.2rem;
+  text-shadow: 0 0 10px rgba(255,220,50,.5);
 }

@@ -5,6 +5,61 @@ const PLAYER_COLORS = ["#e53935", "#1565c0", "#2e7d32", "#f57f17"];
 const CLASS_DESC = {};
 (window.CLASSES_DATA || []).forEach(c => { CLASS_DESC[c.id] = c.ability_desc; });
 
+// ── Item helpers ────────────────────────────────────────────────
+const _ITEM_ICON_FB = {
+  poke_ball: "🎾", great_ball: "⭐", ultra_ball: "🟡",
+  potion: "💊", medicine: "💊", rare_candy: "🍬",
+  speed_boots: "👟", x_attack: "⚡", escape_rope: "🪢",
+};
+function getItemData(itemId) {
+  return (window.ITEMS_DATA || []).find(i => i.id === itemId)
+    || { id: itemId, name: itemId, icon: _ITEM_ICON_FB[itemId] || "📦", type: "catch", desc: "" };
+}
+function isUsableItem(itemId) {
+  const t = getItemData(itemId).type;
+  return t && t !== "catch";
+}
+function itemSpriteUrl(spriteSlug) {
+  if (!spriteSlug) return null;
+  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${spriteSlug}.png`;
+}
+
+function itemImgOrIcon(itemId, size = 24) {
+  const d = getItemData(itemId);
+  const url = itemSpriteUrl(d.sprite_slug);
+  if (url) {
+    return `<img src="${url}" width="${size}" height="${size}" style="image-rendering:pixelated;vertical-align:middle;" onerror="this.replaceWith(document.createTextNode('${d.icon}'))" alt="${d.name}">`;
+  }
+  return d.icon;
+}
+
+function getItemDisplayHtml(items) {
+  if (!items || !items.length) return "";
+  const counts = {};
+  items.forEach(i => { counts[i] = (counts[i] || 0) + 1; });
+  const parts = Object.entries(counts).map(([id, n]) =>
+    `<span style="white-space:nowrap;">${itemImgOrIcon(id, 18)}${n > 1 ? `×${n}` : ""}</span>`
+  );
+  return `<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:3px;">${parts.join("")}</div>`;
+}
+
+const _BALL_IDS = ["poke_ball", "great_ball", "ultra_ball"];
+function getBallDisplayHtml(items) {
+  if (!items || !items.length) return "";
+  const counts = {};
+  let otherCount = 0;
+  items.forEach(i => {
+    if (_BALL_IDS.includes(i)) counts[i] = (counts[i] || 0) + 1;
+    else otherCount++;
+  });
+  const parts = Object.entries(counts).map(([id, n]) =>
+    `<span style="white-space:nowrap;">${itemImgOrIcon(id, 16)}${n > 1 ? `×${n}` : ""}</span>`
+  );
+  if (otherCount > 0) parts.push(`<span style="font-size:.65rem;color:#999">+${otherCount}🎒</span>`);
+  if (!parts.length) return "";
+  return `<div style="display:flex;flex-wrap:wrap;gap:3px;align-items:center;margin-top:3px;">${parts.join("")}</div>`;
+}
+
 // ── Lobby helpers ───────────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
   const roomInput = document.getElementById("inp-room");
@@ -115,6 +170,7 @@ function renderPlayers(players, turnOrder, currentTurn) {
     const badgesHtml = (p.badges || []).map(b => `<span class="badge-chip">🏅${b}</span>`).join("") || "<span style='color:#aaa'>—</span>";
     const pokeCount = (p.pokemon || []).length;
     const faintedSuffix = faintedCount > 0 ? ` <span style="color:#e53935">(faint:${faintedCount})</span>` : "";
+    const ballHtml = getBallDisplayHtml(p.items || []);
 
     card.innerHTML = `
       <div class="pc-header">
@@ -131,6 +187,7 @@ function renderPlayers(players, turnOrder, currentTurn) {
         <div class="pc-stat"><span class="pc-stat-val">📍${p.position}</span><span class="pc-stat-lbl">ช่อง</span></div>
       </div>
       <div class="pc-badges">${badgesHtml}</div>
+      ${ballHtml}
       <div class="pc-pokemon pc-pokemon-link" style="margin-top:4px;" title="คลิกดูรายละเอียด">${pokemonList}${faintedSuffix} 📋</div>
     `;
     card.querySelector(".pc-pokemon-link").addEventListener("click", () => {
@@ -157,22 +214,23 @@ function renderActionPanel(phase, pending, players) {
 
   const isMyTurn = pending && pending.pid === SESSION.pid;
   const noAction = !pending || !pending.type;
+  const iAmActive = noAction &&
+    window._gameState?.turn_order &&
+    window._gameState.turn_order[window._gameState.current_turn % window._gameState.turn_order.length] === SESSION.pid;
 
   // Roll button
-  if (rollBtn) {
-    const canRoll = noAction &&
-      window._gameState &&
-      window._gameState.turn_order &&
-      window._gameState.turn_order[window._gameState.current_turn % window._gameState.turn_order.length] === SESSION.pid;
-    rollBtn.classList.toggle("hidden", !canRoll);
-  }
+  if (rollBtn) rollBtn.classList.toggle("hidden", !iAmActive);
+  if (endBtn)  endBtn.classList.toggle("hidden", !SESSION.isHost);
 
-  if (endBtn) {
-    endBtn.classList.toggle("hidden", !SESSION.isHost);
-  }
-
-  if (!pending || !pending.type) {
-    title.textContent = "รอผู้เล่น...";
+  if (noAction) {
+    if (iAmActive) {
+      title.textContent = "🎲 เทิร์นของคุณ!";
+      const usable = (players[SESSION.pid]?.items || []).filter(isUsableItem);
+      if (usable.length > 0)
+        _addBtn(btns, "🎒 ใช้ไอเทม", "btn-secondary btn-sm", showUseItemModal);
+    } else {
+      title.textContent = "รอผู้เล่น...";
+    }
     return;
   }
 
@@ -212,10 +270,23 @@ function renderActionPanel(phase, pending, players) {
 
   if (t === "wild") {
     const pk = data.pokemon || {};
+    const myPl = players[SESSION.pid];
+    const hasPB = hasItem("poke_ball", myPl);
+    const hasGB = hasItem("great_ball", myPl);
+    const hasUB = hasItem("ultra_ball", myPl);
     title.textContent = `🌿 พบ ${pk.name}! (ATK ${pk.atk})`;
-    _addBtn(btns, "✅ จับ (Poké Ball)", "btn-success btn-sm", () => doAction("catch", { item: "poke_ball" }));
-    if (hasItem("great_ball", players[SESSION.pid]))
+    if (hasPB)
+      _addBtn(btns, "✅ จับ (Poké Ball)", "btn-success btn-sm", () => doAction("catch", { item: "poke_ball" }));
+    if (hasGB)
       _addBtn(btns, "⭐ จับ (Great Ball)", "btn-info btn-sm", () => doAction("catch", { item: "great_ball" }));
+    if (hasUB)
+      _addBtn(btns, "🟡 จับ (Ultra Ball)", "btn-warning btn-sm", () => doAction("catch", { item: "ultra_ball" }));
+    if (!hasPB && !hasGB && !hasUB) {
+      const noBall = document.createElement("span");
+      noBall.textContent = "❌ ไม่มีบอล!";
+      noBall.style.cssText = "font-size:.78rem;color:#e53935;font-weight:700;padding:4px 0;";
+      btns.appendChild(noBall);
+    }
     _addBtn(btns, "🏃 หนี", "btn-secondary btn-sm", () => doAction("skip", {}));
 
   } else if (t === "gym") {
@@ -234,11 +305,30 @@ function renderActionPanel(phase, pending, players) {
     title.textContent = `⚔️ พบ ${data.opponent_name}! — สู้หรือใช้ช่อง?`;
     _addBtn(btns, `⚔️ สู้กับ ${data.opponent_name}!`, "btn-danger btn-sm", () => startPvPFightFlow(data.opponent_name));
     _addBtn(btns, `🎯 ใช้ช่อง (${tileLabel})`, "btn-secondary btn-sm", () => doAction("use_tile", {}));
+
+  } else if (t === "pass_go") {
+    title.textContent = `🏁 หยุด Start! +${data.bonus || 6} เงิน — วิจัยก่อนไหม?`;
+    _addBtn(btns, "ต่อไป →", "btn-primary btn-sm", () => doAction("continue", {}));
+
+  } else if (t === "center_shop") {
+    title.textContent = "💊 HP เต็มแล้ว! แวะร้านค้าได้";
+    _addBtn(btns, "🛒 เข้าร้าน", "btn-info btn-sm", showCenterShop);
+    _addBtn(btns, "ออก →", "btn-primary btn-sm", () => doAction("shop_done", {}));
   }
 
   // Research button (always show for your turn)
   if (players[SESSION.pid] && (players[SESSION.pid].pokemon || []).length > 0) {
     _addBtn(btns, "🔬 วิจัย", "btn-info btn-sm", showResearchModal);
+  }
+
+  // Use Item button (show when current player has usable items, outside battle)
+  const myPendingOk = !pending.type || pending.pid === SESSION.pid;
+  const notInBattle = pending.type !== "battle_ongoing" && pending.type !== "pvp_defender_selecting";
+  if (myPendingOk && notInBattle && players[SESSION.pid]) {
+    const usable = (players[SESSION.pid].items || []).filter(isUsableItem);
+    if (usable.length > 0) {
+      _addBtn(btns, "🎒 ใช้ไอเทม", "btn-secondary btn-sm", showUseItemModal);
+    }
   }
 }
 
@@ -595,6 +685,88 @@ function _hideDice() {
   setTimeout(() => overlay.classList.add("hidden"), 240);
 }
 
+// ── Wild encounter notif (for non-catcher spectators) ────────────
+let _wildNotifTimer = null;
+
+function showWildNotif(playerName, pk) {
+  if (_wildNotifTimer) { clearTimeout(_wildNotifTimer); _wildNotifTimer = null; }
+  const spriteUrl = pokeSpriteUrl(pk.sprite_id, false);
+  const imgHtml = spriteUrl
+    ? `<img class="wild-notif-sprite" src="${spriteUrl}" onerror="this.style.display='none'" alt="">`
+    : `<span style="font-size:2rem">🌿</span>`;
+  const el = document.getElementById("wild-notif");
+  el.innerHTML = `
+    <div class="wild-notif-box">
+      ${imgHtml}
+      <div class="wild-notif-info">
+        <div class="wild-notif-who">🌿 ${playerName} พบ</div>
+        <div class="wild-notif-name">${pk.name}</div>
+        <div class="wild-notif-atk">ATK ${pk.atk} · Catch ${pk.catch_rate}</div>
+      </div>
+    </div>`;
+  el.classList.remove("hidden");
+  _wildNotifTimer = setTimeout(closeWildNotif, 12000);
+}
+
+function closeWildNotif() {
+  if (_wildNotifTimer) { clearTimeout(_wildNotifTimer); _wildNotifTimer = null; }
+  document.getElementById("wild-notif")?.classList.add("hidden");
+}
+
+// ── Evolution animation (visible to all) ─────────────────────────
+let _evoTimer = null;
+
+function showEvolutionAnim(playerName, oldName, oldSpriteId, newName, newSpriteId) {
+  if (_evoTimer) { clearTimeout(_evoTimer); _evoTimer = null; }
+  const overlay = document.getElementById("evo-overlay");
+  if (!overlay) return;
+
+  const oldImg = oldSpriteId
+    ? `<img src="${pokeSpriteUrl(oldSpriteId, false)}" onerror="this.style.opacity=0" alt="${oldName}">`
+    : `<span style="font-size:3.5rem;line-height:80px;">✨</span>`;
+  const newImg = newSpriteId
+    ? `<img src="${pokeSpriteUrl(newSpriteId, false)}" onerror="this.style.opacity=0" alt="${newName}">`
+    : `<span style="font-size:3.5rem;line-height:80px;">⭐</span>`;
+
+  overlay.innerHTML = `
+    <div class="evo-card">
+      <div class="evo-header">✨ วิวัฒนาการ! ✨</div>
+      <div class="evo-player">${playerName}</div>
+      <div class="evo-sprites">
+        <div class="evo-sprite-old">${oldImg}</div>
+        <div class="evo-arrow">→</div>
+        <div class="evo-sprite-new">${newImg}</div>
+      </div>
+      <div class="evo-names">
+        <span class="evo-old-name">${oldName}</span>
+        <span style="color:#ffe066;margin:0 10px">→</span>
+        <span class="evo-new-name">${newName}</span>
+      </div>
+    </div>`;
+  overlay.classList.remove("hidden");
+  _evoTimer = setTimeout(() => {
+    overlay.classList.add("hidden");
+    _evoTimer = null;
+  }, 5000);
+}
+
+// ── Wild watch modal (for non-catcher observers) ─────────────────
+function showWildWatchModal(playerName, pk) {
+  const spriteHtml = pk.sprite_id
+    ? `<div class="pk-sprite-wrap" style="text-align:center;margin-bottom:8px;">${pokeImgTag(pk.sprite_id, true, "pk-sprite-lg")}</div>`
+    : "";
+  showModal(
+    `🌿 ${playerName} พบ ${pk.name}!`,
+    `${spriteHtml}
+     <div class="modal-stat"><span>Type</span><span>${pk.type || "?"}</span></div>
+     <div class="modal-stat"><span>ATK</span><span>${pk.atk ?? "?"}</span></div>
+     <div class="modal-stat"><span>Catch Rate</span><span>${pk.catch_rate ?? "?"}</span></div>
+     <div class="modal-stat"><span>Research Value</span><span>${pk.research_value ?? "?"} เงิน</span></div>
+     <div style="text-align:center;margin-top:10px;font-size:.82rem;color:#888;">รอ ${playerName} ตัดสินใจ...</div>`,
+    []
+  );
+}
+
 // ── Event card ───────────────────────────────────────────────────
 let _eventCardTimer = null;
 
@@ -634,6 +806,110 @@ function closeEventCard() {
   if (_eventCardTimer) { clearTimeout(_eventCardTimer); _eventCardTimer = null; }
   const overlay = document.getElementById("event-card-overlay");
   if (overlay) overlay.classList.add("hidden");
+}
+
+// ── Center Shop ──────────────────────────────────────────────────
+const _SHOP_ITEMS = [
+  { id: "poke_ball",   name: "Poké Ball",   price: 2,  icon: "🎾", desc: "บอลจับโปเกมอน" },
+  { id: "great_ball",  name: "Great Ball",  price: 5,  icon: "⭐", desc: "+2 catch rate" },
+  { id: "ultra_ball",  name: "Ultra Ball",  price: 8,  icon: "🟡", desc: "+4 catch rate" },
+  { id: "potion",      name: "Potion",      price: 5,  icon: "💊", desc: "ฟื้น HP (เก็บในกระเป๋า)" },
+  { id: "rare_candy",  name: "Rare Candy",  price: 10, icon: "🍬", desc: "+1 ATK ทันที (เลือกโปเกมอน)" },
+  { id: "speed_boots", name: "Speed Boots", price: 6,  icon: "👟", desc: "+1 ช่องเดิน (เก็บในกระเป๋า)" },
+  { id: "x_attack",    name: "X Attack",    price: 6,  icon: "⚡", desc: "+3 ATK ต่อสู้ครั้งนี้ (เก็บในกระเป๋า)" },
+  { id: "escape_rope", name: "Escape Rope", price: 4,  icon: "🪢", desc: "วาร์ปไป Center ใกล้สุด (เก็บในกระเป๋า)" },
+];
+
+function showCenterShop() {
+  const player = window._gameState?.players?.[SESSION.pid];
+  if (!player) return;
+  const money = player.money;
+  const cards = _SHOP_ITEMS.map(item => {
+    const ok = money >= item.price;
+    const imgHtml = itemImgOrIcon(item.id, 36);
+    const buyBtn = ok
+      ? `<button class="btn btn-success btn-sm" style="width:100%;font-size:.72rem;padding:3px 0;" onclick="buyShopItem('${item.id}')">ซื้อ</button>`
+      : `<span class="shop-card-price-na">💰${item.price}</span>`;
+    return `
+      <div class="shop-card${ok ? "" : " shop-disabled"}">
+        <div class="shop-card-icon">${imgHtml}</div>
+        <div class="shop-card-name">${item.name}</div>
+        <div class="shop-card-desc">${item.desc}</div>
+        ${ok ? `<div class="shop-card-price">💰${item.price}</div>` : ""}
+        ${buyBtn}
+      </div>`;
+  }).join("");
+
+  showModal("🏪 ร้านค้า Pokémon Center",
+    `<div class="shop-money">
+       <span>กระเป๋าเงิน</span>
+       <strong>💰 ${money}</strong>
+     </div>
+     <div class="shop-grid">${cards}</div>`,
+    [{ text: "ออกจากร้าน →", cls: "btn-primary", fn: () => doAction("shop_done", {}) }]
+  );
+}
+
+function buyShopItem(itemId) {
+  closeModal();
+  if (itemId === "rare_candy") {
+    const pokemon = window._gameState?.players?.[SESSION.pid]?.pokemon || [];
+    if (!pokemon.length) return;
+    showPokemonSelectModal(pokemon, (selectedId) => {
+      doAction("shop_buy", { item: itemId, pokemon_id: selectedId });
+    }, "+1 ATK");
+  } else {
+    doAction("shop_buy", { item: itemId });
+    setTimeout(showCenterShop, 250);
+  }
+}
+
+// ── Use Item flow ────────────────────────────────────────────────
+function showUseItemModal() {
+  const player = window._gameState?.players?.[SESSION.pid];
+  if (!player) return;
+  const items = player.items || [];
+  const usableIds = items.filter(isUsableItem);
+  if (!usableIds.length) {
+    showModal("🎒 ไอเทม", "<p style='color:#888'>ไม่มีไอเทมที่ใช้ได้</p>", [{ text: "ปิด", cls: "btn-secondary" }]);
+    return;
+  }
+
+  const counts = {};
+  usableIds.forEach(i => { counts[i] = (counts[i] || 0) + 1; });
+
+  const rows = Object.entries(counts).map(([id, n]) => {
+    const d = getItemData(id);
+    return `
+      <div class="shop-row" style="cursor:pointer;" onclick="window._useItemFn('${id}')">
+        <span class="shop-icon">${itemImgOrIcon(id, 28)}</span>
+        <div class="shop-info">
+          <div class="shop-name">${d.name}${n > 1 ? ` ×${n}` : ""}</div>
+          <div class="shop-desc">${d.desc}</div>
+        </div>
+      </div>`;
+  }).join("");
+
+  window._useItemFn = (itemId) => { closeModal(); _executeUseItem(itemId); };
+
+  showModal("🎒 ใช้ไอเทม",
+    `<div class="shop-list">${rows}</div>`,
+    [{ text: "ยกเลิก", cls: "btn-secondary" }]
+  );
+}
+
+function _executeUseItem(itemId) {
+  const d = getItemData(itemId);
+  if (d.type === "use_hp" || d.type === "use_atk") {
+    const pokemon = window._gameState?.players?.[SESSION.pid]?.pokemon || [];
+    if (!pokemon.length) { doAction("use_item", { item: itemId }); return; }
+    const label = d.type === "use_hp" ? "ฟื้น HP" : "+1 ATK (อาจวิวัฒนาการ!)";
+    showPokemonSelectModal(pokemon, (selectedId) => {
+      doAction("use_item", { item: itemId, pokemon_id: selectedId });
+    }, label);
+  } else {
+    doAction("use_item", { item: itemId });
+  }
 }
 
 // ── Game Over ────────────────────────────────────────────────────

@@ -3,6 +3,13 @@ const socket = io();
 window._gameState = null;
 window._diceAnimStartTime = 0;
 
+window.addEventListener("beforeunload", (e) => {
+  if (SESSION.roomId && window._gameState?.phase === "playing") {
+    e.preventDefault();
+    e.returnValue = "";
+  }
+});
+
 // ── API helpers ──────────────────────────────────────────────────
 async function apiFetch(path, body) {
   const res = await fetch(path, {
@@ -247,6 +254,12 @@ socket.on("game_update", async (state) => {
     _eventCardOwnerPid = null;
   }
 
+  // Dismiss wild watch modal once wild pending clears
+  if (_watchingWild && (!state.pending || state.pending.type !== "wild")) {
+    _watchingWild = false;
+    closeModal();
+  }
+
   if (state.phase === "lobby") {
     renderWaiting(state.players, SESSION.isHost);
     return;
@@ -312,6 +325,11 @@ socket.on("game_update", async (state) => {
             window._pendingModal = null;
             _showActionModal(d);
           }
+          if (_pendingWildWatch) {
+            const d = _pendingWildWatch;
+            _pendingWildWatch = null;
+            showWildWatchModal(d.player_name, d.pokemon);
+          }
         });
       });
 
@@ -348,6 +366,10 @@ function _showActionModal(data) {
 
   if (t === "wild") {
     const pk = d.pokemon || {};
+    const myPl = window._gameState?.players?.[SESSION.pid];
+    const hasPB = hasItem("poke_ball", myPl);
+    const hasGB = hasItem("great_ball", myPl);
+    const hasUB = hasItem("ultra_ball", myPl);
     showModal(`🌿 พบ ${pk.name}!`, `
       <div class="pk-sprite-wrap">${pokeImgTag(pk.sprite_id, true, "pk-sprite-lg")}</div>
       <div class="modal-stat"><span>Type</span><span>${pk.type}</span></div>
@@ -355,10 +377,10 @@ function _showActionModal(data) {
       <div class="modal-stat"><span>Catch Rate</span><span>${pk.catch_rate}</span></div>
       <div class="modal-stat"><span>Research Value</span><span>${pk.research_value} เงิน</span></div>
     `, [
-      { text: "✅ จับ (Poké Ball)", cls: "btn-success", fn: () => doAction("catch", { item: "poke_ball" }) },
-      ...(hasItem("great_ball", window._gameState?.players?.[SESSION.pid]) ? [
-        { text: "⭐ Great Ball", cls: "btn-info", fn: () => doAction("catch", { item: "great_ball" }) }
-      ] : []),
+      ...(hasPB ? [{ text: "✅ จับ (Poké Ball)", cls: "btn-success", fn: () => doAction("catch", { item: "poke_ball" }) }] : []),
+      ...(hasGB ? [{ text: "⭐ Great Ball",       cls: "btn-info",    fn: () => doAction("catch", { item: "great_ball" }) }] : []),
+      ...(hasUB ? [{ text: "🟡 Ultra Ball +4",    cls: "btn-warning", fn: () => doAction("catch", { item: "ultra_ball" }) }] : []),
+      ...(!hasPB && !hasGB && !hasUB ? [{ text: "❌ ไม่มีบอล", cls: "btn-secondary" }] : []),
       { text: "🏃 หนี", cls: "btn-secondary", fn: () => doAction("skip", {}) },
     ]);
 
@@ -400,15 +422,54 @@ function _showActionModal(data) {
       { text: "⚔️ เลือก Pokémon สู้!", cls: "btn-danger", fn: () => startDefenderPvPSelectFlow(d.attacker_name) },
       { text: "🏃 หนี", cls: "btn-secondary", fn: () => doAction("pvp_pokemon_select", { pokemon_id: null }) },
     ]);
+
+  } else if (t === "pass_go") {
+    const hasPkmn = (window._gameState?.players?.[SESSION.pid]?.pokemon || []).length > 0;
+    showModal(`🏁 ผ่าน Start! +${d.bonus || 6} เงิน`, `
+      <p>หยุดที่ช่อง Start — วิจัยโปเกมอนได้ก่อนเดินต่อ</p>
+    `, [
+      ...(hasPkmn ? [{ text: "🔬 วิจัย", cls: "btn-info", fn: () => showResearchModal() }] : []),
+      { text: "ต่อไป →", cls: "btn-primary", fn: () => doAction("continue", {}) },
+    ]);
+
+  } else if (t === "center_shop") {
+    showCenterShop();
   }
 }
 
+let _watchingWild = false;
+let _pendingWildWatch = null;
+
+socket.on("wild_encounter", (data) => {
+  if (data.pid === SESSION.pid) return; // catcher gets action_required with buttons
+  _watchingWild = true;
+  if (window._tokenAnimating) {
+    _pendingWildWatch = data; // show after board animation finishes
+  } else {
+    showWildWatchModal(data.player_name, data.pokemon);
+  }
+});
+
+socket.on("pokemon_evolved", (data) => {
+  showEvolutionAnim(data.player_name, data.old_name, data.old_sprite_id, data.new_name, data.new_sprite_id);
+});
+
+socket.on("catch_rolling", (data) => {
+  if (data.pid === SESSION.pid) return; // catcher already animating via doAction
+  showDiceRolling(`🎯 ${data.player_name} จับโปเกมอน`, `กำลังทอยจับ ${data.pokemon_name}...`);
+  window._diceAnimStartTime = Date.now();
+});
+
 socket.on("catch_result", (data) => {
-  if (data.pid !== SESSION.pid) return;
+  const isMe = data.pid === SESSION.pid;
   const bonus = data.bonus > 0 ? `+${data.bonus}` : "";
-  const label = data.success
-    ? `✅ ${data.dice}${bonus} = ${data.total} ≥ ${data.catch_rate}`
-    : `❌ ${data.dice}${bonus} = ${data.total} < ${data.catch_rate}`;
+  const label = isMe
+    ? (data.success
+        ? `✅ ${data.dice}${bonus} = ${data.total} ≥ ${data.catch_rate}`
+        : `❌ ${data.dice}${bonus} = ${data.total} < ${data.catch_rate}`)
+    : (data.success
+        ? `✅ จับ ${data.pokemon_name} สำเร็จ!`
+        : `❌ จับ ${data.pokemon_name} ไม่สำเร็จ`);
   _settleAfterMinSpin(data.dice, label);
 });
 

@@ -7,7 +7,8 @@
     "ability_desc": "ATK+2 ในการต่อสู้ทุกครั้ง",
     "item_limit": 4,
     "starter_items": ["great_ball"],
-    "starter_pokemon": ["pikachu"]
+    "starter_pokemon": ["pikachu"],
+    "trainer_sprite": "red"
   },
   {
     "id": "rocket",
@@ -17,7 +18,8 @@
     "ability_desc": "ขโมยโปเกมอน 1 ตัวเมื่อชนะ PvP",
     "item_limit": 4,
     "starter_items": ["great_ball", "great_ball"],
-    "starter_pokemon": ["ekans"]
+    "starter_pokemon": ["ekans"],
+    "trainer_sprite": "teamrocket-m"
   },
   {
     "id": "scientist",
@@ -27,7 +29,8 @@
     "ability_desc": "ส่งวิจัยได้ทุกเทิร์น ไม่ต้องจอด",
     "item_limit": 4,
     "starter_items": ["potion"],
-    "starter_pokemon": ["porygon"]
+    "starter_pokemon": ["porygon"],
+    "trainer_sprite": "scientist"
   },
   {
     "id": "collector",
@@ -37,6 +40,7 @@
     "ability_desc": "ถือไอเทมได้สูงสุด 6 ใบ",
     "item_limit": 6,
     "starter_items": ["great_ball", "great_ball", "great_ball"],
-    "starter_pokemon": ["eevee"]
+    "starter_pokemon": ["eevee"],
+    "trainer_sprite": "collector"
   }
 ]

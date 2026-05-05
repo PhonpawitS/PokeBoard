@@ -1,6 +1,3 @@
-import eventlet
-eventlet.monkey_patch()
-
 from flask import Flask
 from flask_socketio import SocketIO
 
@@ -13,7 +10,7 @@ from server.debug_events import register_debug_events
 app = Flask(__name__)
 app.config["SECRET_KEY"] = config.SECRET_KEY
 
-socketio = SocketIO(app, async_mode="eventlet", cors_allowed_origins="*")
+socketio = SocketIO(app, async_mode="gevent", cors_allowed_origins="*")
 
 load_all()
 app.register_blueprint(routes_bp)

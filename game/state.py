@@ -43,6 +43,7 @@ def _new_player(name, class_id):
         "fainted": [],
         "badges": [],
         "items": ["poke_ball"] * 6 + list(cls.get("starter_items", [])),
+        "trainer_sprite": cls.get("trainer_sprite", ""),
         "skip_turns": 0,
     }
 

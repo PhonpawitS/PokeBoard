@@ -27,6 +27,7 @@ function getTileGridPos(id) {
 
 let _boardTiles = null;
 window._prevPositions = {};
+window._boardPlayers  = {};
 
 function initBoard(boardData) {
   _boardTiles = boardData;
@@ -58,6 +59,7 @@ function initPrevPositions(players) {
 
 function updateBoard(players, turnOrder, currentTurn) {
   if (!_boardTiles) return;
+  window._boardPlayers = players;
 
   _boardTiles.forEach(t => {
     const el = document.getElementById(`tokens-${t.id}`);
@@ -85,8 +87,19 @@ function _placeToken(pid, pos, color, name, withAnim) {
   tok.className = "token" + (withAnim ? " token-pop" : "");
   tok.style.background = color;
   tok.title = name;
-  tok.textContent = name[0].toUpperCase();
   tok.dataset.pid = pid;
+
+  const trainerSlug = window._boardPlayers?.[pid]?.trainer_sprite;
+  if (trainerSlug) {
+    const img = document.createElement("img");
+    img.src = `https://play.pokemonshowdown.com/sprites/trainers/${trainerSlug}.png`;
+    img.alt = name[0].toUpperCase();
+    img.onerror = () => { img.remove(); tok.textContent = name[0].toUpperCase(); };
+    tok.appendChild(img);
+  } else {
+    tok.textContent = name[0].toUpperCase();
+  }
+
   container.appendChild(tok);
 
   if (withAnim) {

@@ -96,9 +96,13 @@ function renderWaiting(players, isHost) {
   ).join("");
   const classPicker = document.getElementById("wr-class-picker");
   if (classPicker) {
+    const initSprite = trainerImgTag(myClassData?.trainer_sprite || "", 64);
     classPicker.innerHTML = `
       <label style="font-size:.85rem;font-weight:600;">อาชีพของคุณ</label>
-      <select id="wr-class-select" style="width:100%;margin:4px 0 2px;padding:6px;border-radius:6px;border:1px solid #ddd;" onchange="setClassInRoom()">${classOptionsHtml}</select>
+      <div style="display:flex;align-items:center;gap:10px;margin:4px 0 2px;">
+        <select id="wr-class-select" style="flex:1;padding:6px;border-radius:6px;border:1px solid #ddd;" onchange="setClassInRoom()">${classOptionsHtml}</select>
+        <div id="wr-trainer-sprite" style="width:64px;text-align:center;">${initSprite}</div>
+      </div>
       <div style="font-size:.78rem;color:#555;" id="wr-ability-hint">${myClassData ? myClassData.ability_desc : "—"}</div>
     `;
     document.getElementById("wr-class-select").addEventListener("change", () => {
@@ -106,6 +110,8 @@ function renderWaiting(players, isHost) {
       const cls = classes.find(c => c.id === sel.value);
       const hint = document.getElementById("wr-ability-hint");
       if (hint && cls) hint.textContent = cls.ability_desc;
+      const spriteWrap = document.getElementById("wr-trainer-sprite");
+      if (spriteWrap) spriteWrap.innerHTML = trainerImgTag(cls?.trainer_sprite || "", 64);
     });
   }
 
@@ -153,9 +159,7 @@ function renderPlayers(players, turnOrder, currentTurn) {
   const wrap = document.getElementById("players-wrap");
   wrap.innerHTML = "";
 
-  // Assign colors in turn order
   (turnOrder || Object.keys(players)).forEach(pid => getPidColor(pid));
-
   const activePid = turnOrder ? turnOrder[currentTurn % turnOrder.length] : null;
 
   Object.entries(players).forEach(([pid, p]) => {
@@ -164,35 +168,50 @@ function renderPlayers(players, turnOrder, currentTurn) {
       (pid === activePid ? " active-turn" : "") +
       (pid === SESSION.pid ? " my-card" : "");
 
-    const pokemonList = (p.pokemon || []).map(pk => pk.name).join(", ") || "ไม่มี";
-    const faintedCount = (p.fainted || []).length;
-    const totalAtk = (p.pokemon || []).reduce((s, pk) => s + pk.atk, 0);
-    const badgesHtml = (p.badges || []).map(b => `<span class="badge-chip">🏅${b}</span>`).join("") || "<span style='color:#aaa'>—</span>";
-    const pokeCount = (p.pokemon || []).length;
-    const faintedSuffix = faintedCount > 0 ? ` <span style="color:#e53935">(faint:${faintedCount})</span>` : "";
-    const ballHtml = getBallDisplayHtml(p.items || []);
+    const pokeCount  = (p.pokemon || []).length;
+    const fainted    = (p.fainted || []).length;
+    const totalAtk   = (p.pokemon || []).reduce((s, pk) => s + pk.atk, 0);
+    const badgeCount = (p.badges || []).length;
+    const items      = p.items || [];
+    const ballCount  = items.filter(i => _BALL_IDS.includes(i)).length;
+
+    // Item slots up to class limit
+    const cls = (window.CLASSES_DATA || []).find(c => c.id === p.class_id);
+    const limit = cls ? (cls.item_limit || 4) : 4;
+    let slotsHtml = '<div class="pc-slots">';
+    for (let i = 0; i < limit; i++) {
+      if (items[i]) {
+        slotsHtml += `<div class="pc-slot pc-slot-filled" title="${getItemData(items[i]).name}">${itemImgOrIcon(items[i], 16)}</div>`;
+      } else {
+        slotsHtml += `<div class="pc-slot pc-slot-empty"></div>`;
+      }
+    }
+    slotsHtml += '</div>';
+
+    const pokemonNames = (p.pokemon || []).map(pk => pk.name).join(", ") || "ไม่มี";
+    const trainerSlug = cls?.trainer_sprite || "";
 
     card.innerHTML = `
       <div class="pc-header">
-        <div class="pc-token" style="background:${getPidColor(pid)};"></div>
-        <div>
-          <div class="pc-name">${p.name} ${pid === SESSION.pid ? "<span style='color:#c00;font-size:.7rem'>(คุณ)</span>" : ""}</div>
+        <div class="pc-token" style="background:${getPidColor(pid)};color:${getPidColor(pid)};"></div>
+        <div class="pc-name-wrap">
+          <div class="pc-name">${p.name}${pid === SESSION.pid ? ' <span class="pc-you">(คุณ)</span>' : ""}</div>
           <div class="pc-class">${getClassName(p.class_id)}</div>
         </div>
+        ${pid === activePid ? '<span class="pc-active-arrow">▶</span>' : ""}
+        ${trainerImgTag(trainerSlug, 38)}
       </div>
-      <div class="pc-stats">
-        <div class="pc-stat"><span class="pc-stat-val">💰${p.money}</span><span class="pc-stat-lbl">เงิน</span></div>
-        <div class="pc-stat"><span class="pc-stat-val">⚔️${totalAtk}</span><span class="pc-stat-lbl">ATK</span></div>
-        <div class="pc-stat"><span class="pc-stat-val">🎯${pokeCount}</span><span class="pc-stat-lbl">โปเกมอน</span></div>
-        <div class="pc-stat"><span class="pc-stat-val">📍${p.position}</span><span class="pc-stat-lbl">ช่อง</span></div>
+      <div class="pc-stats-row">
+        <span class="pc-badge gold">💰${p.money}</span>
+        <span class="pc-badge red">⬤ ${pokeCount} (${totalAtk}⚔)</span>
+        <span class="pc-badge blue">🎾${ballCount}</span>
+        ${fainted > 0 ? `<span class="pc-badge dark">💀${fainted}</span>` : ""}
+        ${badgeCount > 0 ? `<span class="pc-badge medal">🏅${badgeCount}</span>` : ""}
       </div>
-      <div class="pc-badges">${badgesHtml}</div>
-      ${ballHtml}
-      <div class="pc-pokemon pc-pokemon-link" style="margin-top:4px;" title="คลิกดูรายละเอียด">${pokemonList}${faintedSuffix} 📋</div>
+      ${slotsHtml}
+      <div class="pc-pokemon pc-pokemon-link" title="คลิกดูรายละเอียด">${pokemonNames} 📋</div>
     `;
-    card.querySelector(".pc-pokemon-link").addEventListener("click", () => {
-      showPlayerPokemonModal(p);
-    });
+    card.querySelector(".pc-pokemon-link").addEventListener("click", () => showPlayerPokemonModal(p));
     wrap.appendChild(card);
   });
 }
@@ -397,6 +416,18 @@ function showResearchModal() {
       { text: "ยกเลิก", cls: "btn-secondary" }
     ]
   );
+}
+
+// ── Trainer sprite helpers ───────────────────────────────────────
+function trainerSpriteUrl(slug) {
+  if (!slug) return null;
+  return `https://play.pokemonshowdown.com/sprites/trainers/${slug}.png`;
+}
+
+function trainerImgTag(slug, size = 48) {
+  const url = trainerSpriteUrl(slug);
+  if (!url) return "";
+  return `<img src="${url}" height="${size}" style="image-rendering:pixelated;object-fit:contain;" onerror="this.style.display='none'" alt="">`;
 }
 
 // ── Pokemon sprite helpers ───────────────────────────────────────
@@ -824,44 +855,46 @@ function showCenterShop() {
   const player = window._gameState?.players?.[SESSION.pid];
   if (!player) return;
   const money = player.money;
-  const cards = _SHOP_ITEMS.map(item => {
+
+  const _BALLS  = _SHOP_ITEMS.filter(i => ["poke_ball","great_ball","ultra_ball"].includes(i.id));
+  const _OTHERS = _SHOP_ITEMS.filter(i => !["poke_ball","great_ball","ultra_ball"].includes(i.id));
+
+  function _card(item, big) {
     const ok = money >= item.price;
-    const imgHtml = itemImgOrIcon(item.id, 36);
+    const sz = big ? 52 : 40;
+    const imgHtml = itemImgOrIcon(item.id, sz);
     const buyBtn = ok
-      ? `<button class="btn btn-success btn-sm" style="width:100%;font-size:.72rem;padding:3px 0;" onclick="buyShopItem('${item.id}')">ซื้อ</button>`
-      : `<span class="shop-card-price-na">💰${item.price}</span>`;
+      ? `<button class="btn btn-success btn-sm" style="width:100%;font-size:.7rem;padding:3px 0;margin-top:4px;" onclick="buyShopItem('${item.id}')">ซื้อ 💰${item.price}</button>`
+      : `<div style="font-size:.68rem;color:#e57373;font-weight:700;margin-top:4px;">💰${item.price} (ไม่พอ)</div>`;
     return `
-      <div class="shop-card${ok ? "" : " shop-disabled"}">
-        <div class="shop-card-icon">${imgHtml}</div>
-        <div class="shop-card-name">${item.name}</div>
+      <div class="shop-card${ok ? "" : " shop-disabled"}" style="${big ? "min-width:90px;" : ""}">
+        <div class="shop-card-icon" style="width:${big?64:48}px;height:${big?64:48}px;">${imgHtml}</div>
+        <div class="shop-card-name" style="font-size:${big?".78":".7"}rem;">${item.name}</div>
         <div class="shop-card-desc">${item.desc}</div>
-        ${ok ? `<div class="shop-card-price">💰${item.price}</div>` : ""}
         ${buyBtn}
       </div>`;
-  }).join("");
+  }
+
+  const ballsHtml  = `<div class="shop-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:10px;">${_BALLS.map(i => _card(i,true)).join("")}</div>`;
+  const othersHtml = `<div class="shop-grid" style="grid-template-columns:repeat(${Math.min(_OTHERS.length,3)},1fr);">${_OTHERS.map(i => _card(i,false)).join("")}</div>`;
+
+  const dividerHtml = `<div style="font-size:.72rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin:4px 0 6px;border-top:1px solid #eee;padding-top:8px;">ไอเทม</div>`;
 
   showModal("🏪 ร้านค้า Pokémon Center",
     `<div class="shop-money">
        <span>กระเป๋าเงิน</span>
        <strong>💰 ${money}</strong>
      </div>
-     <div class="shop-grid">${cards}</div>`,
+     <div style="font-size:.72rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">ลูกบอล</div>
+     ${ballsHtml}${dividerHtml}${othersHtml}`,
     [{ text: "ออกจากร้าน →", cls: "btn-primary", fn: () => doAction("shop_done", {}) }]
   );
 }
 
 function buyShopItem(itemId) {
   closeModal();
-  if (itemId === "rare_candy") {
-    const pokemon = window._gameState?.players?.[SESSION.pid]?.pokemon || [];
-    if (!pokemon.length) return;
-    showPokemonSelectModal(pokemon, (selectedId) => {
-      doAction("shop_buy", { item: itemId, pokemon_id: selectedId });
-    }, "+1 ATK");
-  } else {
-    doAction("shop_buy", { item: itemId });
-    setTimeout(showCenterShop, 250);
-  }
+  doAction("shop_buy", { item: itemId });
+  setTimeout(showCenterShop, 250);
 }
 
 // ── Use Item flow ────────────────────────────────────────────────

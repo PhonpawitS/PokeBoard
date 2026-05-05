@@ -1,8 +1,6 @@
-- [x] มีระบบวิวัฒนาการโปเกม่อน — _try_evolve() ใน engine.py, data/evolutions.json (64 สายวิวัฒนาการ)
-- [x] มี debug เสก item — debug.item("speed_boots") ทำงานได้เลย (socket.js)
-- [x] มี data item ไว้สำหรับเก็บไอเทมต่างๆ — data/items.json (8 ไอเทม), window.ITEMS_DATA
-- [x] มีไอเทมที่มีความสามารถต่างๆ — speed_boots (+1 ช่อง), x_attack (+3 ATK), escape_rope (วาร์ป), potion (ฮีล), rare_candy (+ATK+evolve)
-- บอกวิธีพิม console debug แม้จะ deploy แล้ว → ดูคำอธิบายด้านล่าง
+- เพิ่มอาชีพตาม spriteที่หาได้ max 16 classes
+- เปลี่ยน turn เป็น สุ่ม item -> เลือกใช้ไิเทม (option) -> ทอย -> เดิน -> ทำแอคชั่นตามช่อง
+- นักสะสมไม่ได้รับบอล
 
 ---
 

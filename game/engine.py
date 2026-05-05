@@ -218,28 +218,8 @@ def _handle_shop_buy(room, player, data, socketio, room_id):
     player["money"] -= price
 
     if item == "rare_candy":
-        pokemon_id = data.get("pokemon_id")
-        pk = _find_pokemon(player["pokemon"], pokemon_id)
-        if pk:
-            old_name = pk["name"]
-            old_sprite_id = pk["sprite_id"]
-            old_atk = pk["atk"]
-            pk["atk"] += 1
-            pk["max_hp"] = battle.pokemon_max_hp(pk["atk"])
-            evolved_into = _try_evolve(pk, force=True)
-            if evolved_into:
-                state.add_log(room, f"🍬🎉 {player['name']} {old_name} → {pk['name']} วิวัฒนาการ! ATK {old_atk}→{pk['atk']}")
-                socketio.emit("pokemon_evolved", {
-                    "player_name": player["name"],
-                    "old_name": old_name,
-                    "old_sprite_id": old_sprite_id,
-                    "new_name": pk["name"],
-                    "new_sprite_id": pk["sprite_id"],
-                }, room=room_id)
-            else:
-                state.add_log(room, f"🍬 {player['name']} Rare Candy → {pk['name']} ATK {old_atk}→{pk['atk']}!")
-        else:
-            player["money"] += price  # refund if no pokemon
+        player["items"].append(item)
+        state.add_log(room, f"🍬 {player['name']} ซื้อ Rare Candy → เก็บในกระเป๋า")
     else:
         player["items"].append(item)
         state.add_log(room, f"🛒 {player['name']} ซื้อ {_ITEM_NAMES.get(item, item)}")

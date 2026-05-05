@@ -61,25 +61,28 @@
             <div class="room-info">🎮 Room: <span id="gc-room-id">—</span></div>
             <div class="turn-info">เทิร์นของ</div>
             <div class="turn-player" id="gc-turn-player">—</div>
-            <div id="gc-roll-btn-wrap" style="margin-top:8px;">
-              <button class="btn btn-primary btn-sm hidden" id="btn-roll" onclick="doRoll()">🎲 ทอยเต๋า</button>
-            </div>
-            <div id="gc-end-btn-wrap" style="margin-top:6px;">
-              <button class="btn btn-danger btn-sm hidden" id="btn-end-game" onclick="doEndGame()">🏁 จบเกม</button>
-            </div>
           </div>
         </div>
       </div>
 
-      <div class="right-panel">
-        <div class="players-wrap" id="players-wrap"></div>
+      <!-- floating player cards (top-right) -->
+      <div class="players-wrap" id="players-wrap"></div>
 
-        <div class="action-panel" id="action-panel">
-          <h3 id="action-title">รอการทอยเต๋า...</h3>
+      <!-- floating log (bottom-center) -->
+      <div class="log-panel" id="log-panel"></div>
+
+      <!-- action bar (bottom) -->
+      <div class="action-bar">
+        <div class="action-bar-left">
+          <button class="btn btn-primary btn-sm hidden" id="btn-roll" onclick="doRoll()">🎲 ทอยเต๋า</button>
+        </div>
+        <div class="action-bar-center">
+          <span class="action-bar-title" id="action-title">รอการทอยเต๋า...</span>
           <div class="action-btns" id="action-btns"></div>
         </div>
-
-        <div class="log-panel" id="log-panel"></div>
+        <div class="action-bar-right">
+          <button class="btn btn-danger btn-sm hidden" id="btn-end-game" onclick="doEndGame()">🏁 จบเกม</button>
+        </div>
       </div>
     </div>
   </div>

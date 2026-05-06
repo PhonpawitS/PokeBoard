@@ -29,6 +29,72 @@ let _boardTiles = null;
 window._prevPositions = {};
 window._boardPlayers  = {};
 
+// ── Board pan / zoom ─────────────────────────────────────────────
+let _pan   = { x: 0, y: 0 };
+let _scale = 1.5;
+let _drag  = null;
+
+function _applyPan() {
+  const grid = document.getElementById("board-grid");
+  if (!grid) return;
+  grid.style.transform = `translateX(${_pan.x}px) translateY(${_pan.y}px) rotateX(52deg) rotateZ(-45deg) scale(${_scale})`;
+}
+
+function initBoardPan() {
+  const wrap = document.querySelector(".board-wrap");
+  if (!wrap || wrap._panInited) return;
+  wrap._panInited = true;
+
+  wrap.addEventListener("mousedown", (e) => {
+    if (e.button !== 0) return;
+    _drag = { sx: e.clientX - _pan.x, sy: e.clientY - _pan.y };
+    wrap.classList.add("panning");
+    e.preventDefault();
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (!_drag) return;
+    _pan.x = e.clientX - _drag.sx;
+    _pan.y = e.clientY - _drag.sy;
+    _applyPan();
+  });
+
+  window.addEventListener("mouseup", () => {
+    _drag = null;
+    wrap.classList.remove("panning");
+  });
+
+  wrap.addEventListener("touchstart", (e) => {
+    const t = e.touches[0];
+    _drag = { sx: t.clientX - _pan.x, sy: t.clientY - _pan.y };
+    e.preventDefault();
+  }, { passive: false });
+
+  window.addEventListener("touchmove", (e) => {
+    if (!_drag) return;
+    const t = e.touches[0];
+    _pan.x = t.clientX - _drag.sx;
+    _pan.y = t.clientY - _drag.sy;
+    _applyPan();
+    e.preventDefault();
+  }, { passive: false });
+
+  window.addEventListener("touchend", () => { _drag = null; });
+
+  wrap.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 0.08 : -0.08;
+    _scale = Math.max(0.6, Math.min(3.0, _scale + delta));
+    _applyPan();
+  }, { passive: false });
+
+  wrap.addEventListener("dblclick", () => {
+    _pan = { x: 0, y: 0 };
+    _scale = 1.5;
+    _applyPan();
+  });
+}
+
 function initBoard(boardData) {
   _boardTiles = boardData;
   const grid = document.getElementById("board-grid");
@@ -49,6 +115,8 @@ function initBoard(boardData) {
     `;
     grid.appendChild(el);
   });
+
+  initBoardPan();
 }
 
 function initPrevPositions(players) {

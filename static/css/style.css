@@ -140,8 +140,11 @@ header {
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: visible;
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
 }
+.board-wrap.panning { cursor: grabbing; }
 
 .board-grid {
   display: grid;
@@ -154,7 +157,7 @@ header {
   border: 3px solid #2d5a2d;
   position: relative;
   /* isometric 3D transform */
-  transform: rotateX(52deg) rotateZ(-45deg) scale(0.85);
+  transform: rotateX(52deg) rotateZ(-45deg) scale(1.5);
   transform-style: preserve-3d;
   box-shadow: 0 30px 80px rgba(0,0,0,.9);
 }
@@ -201,6 +204,7 @@ header {
   /* lift tiles off the board floor for isometric 3D block effect */
   transform: translateZ(8px);
   box-shadow: -4px 4px 0 rgba(0,0,0,.45), -8px 8px 0 rgba(0,0,0,.2);
+  transform-style: preserve-3d;
 }
 .tile:hover { transform: translateZ(14px) scale(1.04); z-index: 10; }
 
@@ -234,21 +238,25 @@ header {
   gap: 2px;
   margin-top: 2px;
   justify-content: center;
+  transform-style: preserve-3d;
 }
 
 .token {
   width: 20px;
-  height: 24px;
-  border-radius: 3px;
-  border: 1.5px solid rgba(255,255,255,.75);
-  font-size: .5rem;
+  height: 34px;
+  border-radius: 3px 3px 0 0;
+  border: 1.5px solid rgba(255,255,255,.8);
+  font-size: .55rem;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-weight: 900;
-  text-shadow: none;
+  text-shadow: 0 1px 2px rgba(0,0,0,.7);
   overflow: hidden;
+  /* stand upright on the isometric board */
+  transform: translateZ(6px) rotateX(-52deg) rotateZ(45deg);
+  transform-origin: center bottom;
 }
 
 .token img {
@@ -1196,4 +1204,49 @@ header {
   color: #ffe066;
   font-size: 1.2rem;
   text-shadow: 0 0 10px rgba(255,220,50,.5);
+}
+
+/* ── WAITING ROOM — CLASS PICKER ── */
+.wr-class-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.wr-class-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wr-class-dropdown {
+  width: 100%;
+  padding: 8px 10px;
+  border: 2px solid var(--gray-border);
+  border-radius: 8px;
+  font-size: .92rem;
+  font-weight: 600;
+  color: var(--text);
+  background: white;
+  cursor: pointer;
+  transition: border-color .2s;
+}
+
+.wr-class-dropdown:focus {
+  outline: none;
+  border-color: var(--red);
+}
+
+.wr-ability-hint {
+  font-size: .78rem;
+  color: #555;
+  background: #f0f4ff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border-left: 3px solid var(--yellow-dark);
+  line-height: 1.5;
+  min-height: 32px;
 }

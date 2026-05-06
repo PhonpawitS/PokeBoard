@@ -34,11 +34,14 @@ def join_room(room_id, pid, name, class_id):
 def _new_player(name, class_id):
     from game.loader import get
     cls = get("class_map").get(class_id) or get("classes")[0]
+    money = config.STARTING_MONEY
+    if cls.get("ability_id") == "rich_start":
+        money += cls.get("ability_params", {}).get("bonus", 0)
     return {
         "name": name,
         "class_id": class_id,
         "position": 0,
-        "money": config.STARTING_MONEY,
+        "money": money,
         "pokemon": [],
         "fainted": [],
         "badges": [],
@@ -68,3 +71,4 @@ def current_pid(room):
 def advance_turn(room):
     room["current_turn"] = (room["current_turn"] + 1) % len(room["turn_order"])
     room["pending"] = {}
+    room.pop("_turn_item_done", None)

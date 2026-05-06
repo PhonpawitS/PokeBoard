@@ -151,10 +151,8 @@ function startDefenderPvPSelectFlow(attackerName) {
   }, attackerName);
 }
 
-function setClassInRoom() {
-  const sel = document.getElementById("wr-class-select");
-  if (!sel) return;
-  socket.emit("set_class", { room_id: SESSION.roomId, pid: SESSION.pid, class_id: sel.value });
+function setClassInRoom(classId) {
+  socket.emit("set_class", { room_id: SESSION.roomId, pid: SESSION.pid, class_id: classId });
 }
 
 function doResearch(pokemon_ids) {
@@ -421,6 +419,17 @@ function _showActionModal(data) {
     `, [
       { text: "⚔️ เลือก Pokémon สู้!", cls: "btn-danger", fn: () => startDefenderPvPSelectFlow(d.attacker_name) },
       { text: "🏃 หนี", cls: "btn-secondary", fn: () => doAction("pvp_pokemon_select", { pokemon_id: null }) },
+    ]);
+
+  } else if (t === "turn_start_item") {
+    const items = d.items || [];
+    const itemsHtml = items.map(id => `
+      <div class="modal-stat">
+        <span>${itemImgOrIcon(id, 36)}</span>
+        <span style="font-weight:700">${getItemData(id).name}</span>
+      </div>`).join("") || `<p style="color:#888;font-size:.85rem;">กระเป๋าเต็ม / ไม่มีไอเทมให้</p>`;
+    showModal("🎁 ได้รับไอเทม!", itemsHtml, [
+      { text: "ตกลง →", cls: "btn-primary", fn: () => doAction("continue", {}) },
     ]);
 
   } else if (t === "pass_go") {

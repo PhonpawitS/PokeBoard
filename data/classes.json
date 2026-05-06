@@ -19,7 +19,7 @@
     "item_limit": 4,
     "starter_items": ["great_ball", "great_ball"],
     "starter_pokemon": ["ekans"],
-    "trainer_sprite": "teamrocket-m"
+    "trainer_sprite": "rocketgrunt"
   },
   {
     "id": "scientist",
@@ -41,6 +41,139 @@
     "item_limit": 6,
     "starter_items": ["great_ball", "great_ball", "great_ball"],
     "starter_pokemon": ["eevee"],
-    "trainer_sprite": "collector"
+    "trainer_sprite": "collector",
+    "turn_item_exclude": ["poke_ball"]
+  },
+  {
+    "id": "ace_trainer",
+    "name": "เอซเทรนเนอร์",
+    "ability_id": "catch_bonus",
+    "ability_params": { "bonus": 2 },
+    "ability_desc": "ทอยจับโปเกมอน +2 เสมอ",
+    "item_limit": 4,
+    "starter_items": ["great_ball"],
+    "starter_pokemon": ["spearow"],
+    "trainer_sprite": "acetrainer"
+  },
+  {
+    "id": "hiker",
+    "name": "นักปีนเขา",
+    "ability_id": "move_bonus",
+    "ability_params": { "bonus": 1 },
+    "ability_desc": "เดินเพิ่ม 1 ช่องทุกเทิร์น",
+    "item_limit": 4,
+    "starter_items": ["escape_rope"],
+    "starter_pokemon": ["geodude"],
+    "trainer_sprite": "hiker"
+  },
+  {
+    "id": "fisherman",
+    "name": "นักตกปลา",
+    "ability_id": "ball_refund",
+    "ability_params": { "rate": 0.5 },
+    "ability_desc": "50% โอกาสได้บอลคืนเมื่อจับไม่สำเร็จ",
+    "item_limit": 4,
+    "starter_items": ["great_ball"],
+    "starter_pokemon": ["magikarp"],
+    "trainer_sprite": "fisherman"
+  },
+  {
+    "id": "blackbelt",
+    "name": "นักมวย",
+    "ability_id": "bare_hands_atk",
+    "ability_params": { "atk": 4 },
+    "ability_desc": "ATK 4 เมื่อสู้โดยไม่มีโปเกมอน",
+    "item_limit": 4,
+    "starter_items": ["x_attack"],
+    "starter_pokemon": ["mankey"],
+    "trainer_sprite": "blackbelt"
+  },
+  {
+    "id": "gambler",
+    "name": "นักการพนัน",
+    "ability_id": "double_gym_reward",
+    "ability_params": {},
+    "ability_desc": "รางวัลยิมครั้งแรก ×2",
+    "item_limit": 4,
+    "starter_items": [],
+    "starter_pokemon": ["meowth"],
+    "trainer_sprite": "supernerd"
+  },
+  {
+    "id": "gentleman",
+    "name": "สุภาพบุรุษ",
+    "ability_id": "rich_start",
+    "ability_params": { "bonus": 20 },
+    "ability_desc": "เริ่มเกมด้วยเงินเพิ่ม 20",
+    "item_limit": 4,
+    "starter_items": ["potion"],
+    "starter_pokemon": ["clefairy"],
+    "trainer_sprite": "gentleman"
+  },
+  {
+    "id": "bug_catcher",
+    "name": "นักจับแมลง",
+    "ability_id": "easy_catch",
+    "ability_params": { "minus": 1 },
+    "ability_desc": "catch rate ของโปเกมอนที่พบลด 1 (จับง่ายขึ้น)",
+    "item_limit": 4,
+    "starter_items": ["great_ball", "great_ball"],
+    "starter_pokemon": ["caterpie"],
+    "trainer_sprite": "bugcatcher"
+  },
+  {
+    "id": "nurse",
+    "name": "พยาบาล",
+    "ability_id": "auto_restore",
+    "ability_params": { "hp": 2 },
+    "ability_desc": "ฟื้น HP +2 ให้โปเกมอนทุกตัวต้นเทิร์น",
+    "item_limit": 4,
+    "starter_items": ["potion", "potion"],
+    "starter_pokemon": ["chansey"],
+    "trainer_sprite": "nurse"
+  },
+  {
+    "id": "breeder",
+    "name": "นักเพาะพันธุ์",
+    "ability_id": "extra_pokemon",
+    "ability_params": { "bonus": 2 },
+    "ability_desc": "ถือโปเกมอนได้เพิ่ม 2 ตัว (รวม 8)",
+    "item_limit": 4,
+    "starter_items": ["potion"],
+    "starter_pokemon": ["jigglypuff"],
+    "trainer_sprite": "pokemonbreeder"
+  },
+  {
+    "id": "officer",
+    "name": "เจ้าหน้าที่ตำรวจ",
+    "ability_id": "rocket_bounty",
+    "ability_params": { "bonus": 5 },
+    "ability_desc": "ได้เงินเพิ่ม +5 เมื่อเอาชนะ Rocket Grunt",
+    "item_limit": 4,
+    "starter_items": [],
+    "starter_pokemon": ["growlithe"],
+    "trainer_sprite": "policeman"
+  },
+  {
+    "id": "lass",
+    "name": "สาวน้อย",
+    "ability_id": "extra_turn_item",
+    "ability_params": {},
+    "ability_desc": "ได้รับไอเทมสุ่ม 2 ชิ้นต้นเทิร์น (แทน 1)",
+    "item_limit": 4,
+    "starter_items": ["potion"],
+    "starter_pokemon": ["jigglypuff"],
+    "trainer_sprite": "lass"
+  },
+  {
+    "id": "swimmer",
+    "name": "นักว่ายน้ำ",
+    "ability_id": "skip_immune",
+    "ability_params": {},
+    "ability_desc": "ไม่ถูก skip turn จากเอฟเฟกต์ใดๆ",
+    "item_limit": 4,
+    "starter_items": [],
+    "starter_pokemon": ["seel"],
+    "trainer_sprite": "swimmerf-gen3"
   }
 ]

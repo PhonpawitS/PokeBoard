@@ -86,33 +86,33 @@ function showScreen(id) {
 function renderWaiting(players, isHost) {
   document.getElementById("disp-room-id").textContent = SESSION.roomId;
 
-  // Class selector for current player
+  // Class selector — dropdown with sprite preview
   const myPlayer = players[SESSION.pid];
   const myClassId = myPlayer ? myPlayer.class_id : "trainer";
   const classes = window.CLASSES_DATA || [];
   const myClassData = classes.find(c => c.id === myClassId);
-  const classOptionsHtml = classes.map(c =>
-    `<option value="${c.id}"${c.id === myClassId ? " selected" : ""}>${c.name}</option>`
-  ).join("");
   const classPicker = document.getElementById("wr-class-picker");
   if (classPicker) {
-    const initSprite = trainerImgTag(myClassData?.trainer_sprite || "", 64);
+    const optionsHtml = classes.map(c =>
+      `<option value="${c.id}"${c.id === myClassId ? " selected" : ""}>${c.name}</option>`
+    ).join("");
+    const spriteUrl = myClassData
+      ? `https://play.pokemonshowdown.com/sprites/trainers/${myClassData.trainer_sprite}.png`
+      : "";
     classPicker.innerHTML = `
-      <label style="font-size:.85rem;font-weight:600;">อาชีพของคุณ</label>
-      <div style="display:flex;align-items:center;gap:10px;margin:4px 0 2px;">
-        <select id="wr-class-select" style="flex:1;padding:6px;border-radius:6px;border:1px solid #ddd;" onchange="setClassInRoom()">${classOptionsHtml}</select>
-        <div id="wr-trainer-sprite" style="width:64px;text-align:center;">${initSprite}</div>
+      <label style="font-size:.85rem;font-weight:700;display:block;margin-bottom:8px;">เลือกอาชีพ</label>
+      <div class="wr-class-row">
+        <img id="wr-class-sprite" src="${spriteUrl}" width="80" height="80"
+             style="image-rendering:pixelated;object-fit:contain;flex-shrink:0;"
+             onerror="this.style.opacity:.25">
+        <div class="wr-class-info">
+          <select id="wr-class-select" class="wr-class-dropdown" onchange="selectClass(this.value)">
+            ${optionsHtml}
+          </select>
+          <div class="wr-ability-hint" id="wr-ability-hint">${myClassData ? myClassData.ability_desc : "—"}</div>
+        </div>
       </div>
-      <div style="font-size:.78rem;color:#555;" id="wr-ability-hint">${myClassData ? myClassData.ability_desc : "—"}</div>
     `;
-    document.getElementById("wr-class-select").addEventListener("change", () => {
-      const sel = document.getElementById("wr-class-select");
-      const cls = classes.find(c => c.id === sel.value);
-      const hint = document.getElementById("wr-ability-hint");
-      if (hint && cls) hint.textContent = cls.ability_desc;
-      const spriteWrap = document.getElementById("wr-trainer-sprite");
-      if (spriteWrap) spriteWrap.innerHTML = trainerImgTag(cls?.trainer_sprite || "", 64);
-    });
   }
 
   const wrap = document.getElementById("waiting-players");
@@ -142,6 +142,21 @@ function renderWaiting(players, isHost) {
 function getClassName(id) {
   const c = (window.CLASSES_DATA || []).find(x => x.id === id);
   return c ? c.name : id;
+}
+
+function selectClass(classId) {
+  const cls = (window.CLASSES_DATA || []).find(c => c.id === classId);
+  if (!cls) return;
+  const sprite = document.getElementById("wr-class-sprite");
+  if (sprite) {
+    sprite.style.opacity = "";
+    sprite.src = `https://play.pokemonshowdown.com/sprites/trainers/${cls.trainer_sprite}.png`;
+  }
+  const hint = document.getElementById("wr-ability-hint");
+  if (hint) hint.textContent = cls.ability_desc;
+  const sel = document.getElementById("wr-class-select");
+  if (sel) sel.value = classId;
+  setClassInRoom(classId);
 }
 
 // ── Player color ────────────────────────────────────────────────
@@ -324,6 +339,22 @@ function renderActionPanel(phase, pending, players) {
     title.textContent = `⚔️ พบ ${data.opponent_name}! — สู้หรือใช้ช่อง?`;
     _addBtn(btns, `⚔️ สู้กับ ${data.opponent_name}!`, "btn-danger btn-sm", () => startPvPFightFlow(data.opponent_name));
     _addBtn(btns, `🎯 ใช้ช่อง (${tileLabel})`, "btn-secondary btn-sm", () => doAction("use_tile", {}));
+
+  } else if (t === "turn_start_item") {
+    if (isMyTurn) {
+      const items = data.items || [];
+      if (items.length > 0) {
+        const names = items.map(id => getItemData(id).name).join(", ");
+        title.textContent = `🎁 ได้รับ: ${names}`;
+      } else {
+        title.textContent = "💊 ฟื้น HP แล้ว";
+      }
+      _addBtn(btns, "ตกลง →", "btn-primary btn-sm", () => doAction("continue", {}));
+    } else {
+      const name = players[pending.pid]?.name || "?";
+      title.textContent = `🎁 ${name} กำลังรับไอเทม...`;
+    }
+    return;
 
   } else if (t === "pass_go") {
     title.textContent = `🏁 หยุด Start! +${data.bonus || 6} เงิน — วิจัยก่อนไหม?`;

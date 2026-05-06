@@ -60,7 +60,8 @@ def register_events(socketio):
         if not cls:
             return
         player["class_id"] = class_id
-        player["items"] = list(cls.get("starter_items", []))
+        player["items"] = ["poke_ball"] * 6 + list(cls.get("starter_items", []))
+        player["trainer_sprite"] = cls.get("trainer_sprite", "")
         socketio.emit("game_update", _serialize(room), room=room_id)
 
     @socketio.on("end_game")

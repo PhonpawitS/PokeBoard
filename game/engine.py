@@ -13,6 +13,59 @@ ROCKET_POKEMON = [
 ]
 
 
+# ── Turn-start item pool ──────────────────────────────────────────
+_TURN_ITEM_POOL = [
+    ("poke_ball",   40),
+    ("great_ball",  20),
+    ("potion",      20),
+    ("x_attack",    10),
+    ("speed_boots",  7),
+    ("escape_rope",  3),
+]
+
+
+def _weighted_choice(pool):
+    total = sum(w for _, w in pool)
+    r = random.randint(1, total)
+    cum = 0
+    for item, w in pool:
+        cum += w
+        if r <= cum:
+            return item
+    return pool[-1][0]
+
+
+def _give_turn_item(room, player):
+    cls = loader.get("class_map").get(player["class_id"], {})
+
+    # auto_restore: nurse heals pokemon at turn start
+    if cls.get("ability_id") == "auto_restore":
+        hp_bonus = cls.get("ability_params", {}).get("hp", 2)
+        healed = []
+        for pk in player["pokemon"]:
+            if pk.get("hp", pk["max_hp"]) < pk["max_hp"]:
+                pk["hp"] = min(pk["hp"] + hp_bonus, pk["max_hp"])
+                healed.append(pk["name"])
+        if healed:
+            state.add_log(room, f"💊 {player['name']} ฟื้น HP+{hp_bonus}: {', '.join(healed)}")
+
+    item_limit = cls.get("item_limit", 4)
+    exclude   = cls.get("turn_item_exclude", [])
+    pool      = [(it, w) for it, w in _TURN_ITEM_POOL if it not in exclude]
+    num_items = 2 if cls.get("ability_id") == "extra_turn_item" else 1
+
+    given = []
+    for _ in range(num_items):
+        if len(player["items"]) < item_limit and pool:
+            item = _weighted_choice(pool)
+            player["items"].append(item)
+            given.append(item)
+
+    if given:
+        names = ", ".join(_ITEM_NAMES.get(i, i) for i in given)
+        state.add_log(room, f"🎁 {player['name']} ได้รับ {names}!")
+
+
 def roll_and_move(room, pid, socketio, room_id):
     if room["phase"] != "playing":
         return
@@ -23,15 +76,30 @@ def roll_and_move(room, pid, socketio, room_id):
     if not player:
         return
 
+    # skip_immune: swimmer ignores skip turns
     if player["skip_turns"] > 0:
-        player["skip_turns"] -= 1
-        state.add_log(room, f"⏭ {player['name']} ข้ามเทิร์น (เหลือ {player['skip_turns']})")
-        state.advance_turn(room)
-        _broadcast(socketio, room_id, room)
-        return
+        cls = loader.get("class_map").get(player["class_id"], {})
+        if cls.get("ability_id") == "skip_immune":
+            player["skip_turns"] = 0
+            state.add_log(room, f"🏊 {player['name']} ไม่ถูก skip turn!")
+        else:
+            player["skip_turns"] -= 1
+            state.add_log(room, f"⏭ {player['name']} ข้ามเทิร์น (เหลือ {player['skip_turns']})")
+            state.advance_turn(room)
+            _broadcast(socketio, room_id, room)
+            return
+
+    # Turn-start item distribution (once per turn, silent — roll continues immediately)
+    if not room.get("_turn_item_done"):
+        room["_turn_item_done"] = True
+        _give_turn_item(room, player)
 
     dice = random.randint(1, 6)
     bonus_steps = player.pop("bonus_steps", 0)
+    # move_bonus: hiker gets permanent +1
+    cls = loader.get("class_map").get(player["class_id"], {})
+    if cls.get("ability_id") == "move_bonus":
+        bonus_steps += cls.get("ability_params", {}).get("bonus", 0)
     move_total = dice + bonus_steps
     old_pos = player["position"]
     new_pos = (old_pos + move_total) % 40
@@ -335,9 +403,16 @@ def handle_action(room, pid, action, data, socketio, room_id):
                 "pokemon_name": pokemon.get("name", "?"),
             }, room=room_id)
             catch_bonus = {"poke_ball": 0, "great_ball": 2, "ultra_ball": 4}.get(item, 0)
+            # catch_bonus ability (ace_trainer)
+            cls = loader.get("class_map").get(player["class_id"], {})
+            if cls.get("ability_id") == "catch_bonus":
+                catch_bonus += cls.get("ability_params", {}).get("bonus", 0)
             dice = random.randint(1, 6)
             roll = dice + catch_bonus
             catch_rate = pokemon.get("catch_rate", 3)
+            # easy_catch ability (bug_catcher)
+            if cls.get("ability_id") == "easy_catch":
+                catch_rate = max(1, catch_rate - cls.get("ability_params", {}).get("minus", 1))
             socketio.emit("catch_result", {
                 "pid": pid,
                 "player_name": player["name"],
@@ -349,9 +424,11 @@ def handle_action(room, pid, action, data, socketio, room_id):
                 "success": roll >= catch_rate,
             }, room=room_id)
             if roll >= catch_rate:
-                cls = loader.get("class_map").get(player["class_id"], {})
-                limit = cls.get("item_limit", 4)
-                if len(player["pokemon"]) < limit + 2:
+                # pokemon cap: base 6, +bonus for extra_pokemon ability (breeder)
+                pokemon_cap = 6
+                if cls.get("ability_id") == "extra_pokemon":
+                    pokemon_cap += cls.get("ability_params", {}).get("bonus", 0)
+                if len(player["pokemon"]) < pokemon_cap:
                     pk = dict(pokemon)
                     battle.init_pokemon_hp(pk)
                     player["pokemon"].append(pk)
@@ -363,6 +440,12 @@ def handle_action(room, pid, action, data, socketio, room_id):
             else:
                 if item in player["items"]:
                     player["items"].remove(item)
+                # ball_refund ability (fisherman)
+                if cls.get("ability_id") == "ball_refund":
+                    rate = cls.get("ability_params", {}).get("rate", 0.5)
+                    if random.random() < rate:
+                        player["items"].append(item)
+                        state.add_log(room, f"🎣 {player['name']} ได้ {_ITEM_NAMES.get(item, item)} คืน!")
                 state.add_log(room, f"❌ {player['name']} จับ {pokemon['name']} ไม่สำเร็จ (🎲{dice}+{catch_bonus}={roll} < {catch_rate})")
 
         else:
@@ -442,6 +525,12 @@ def handle_action(room, pid, action, data, socketio, room_id):
             return
         else:
             state.add_log(room, f"🏃 {player['name']} หนีจาก PvP!")
+
+    elif ptype == "turn_start_item":
+        if action == "continue":
+            room["pending"] = {}
+            _broadcast(socketio, room_id, room)
+        return  # don't advance turn — player still needs to roll
 
     elif ptype == "event_display":
         pass  # effects applied on tile land; just advance turn
@@ -685,11 +774,14 @@ def _resolve_npc_round(room, pending, p_dice, e_dice, socketio, room_id):
     p_atk_val = atk_pk["atk"] if atk_pk else 0
     e_atk_val = enemy_info["atk"]
 
-    # Apply class ability bonus (Trainer +2)
+    # Apply class ability bonus
     cls = loader.get("class_map").get(attacker.get("class_id", ""), {})
     ability_id = cls.get("ability_id")
     if ability_id == "atk_bonus":
         p_atk_val += cls.get("ability_params", {}).get("bonus", 0)
+    # bare_hands_atk: blackbelt fights with ATK N when no pokemon
+    if ability_id == "bare_hands_atk" and not atk_pk:
+        p_atk_val = cls.get("ability_params", {}).get("atk", 4)
 
     # Apply X Attack boost (consumed on first round)
     p_atk_val += attacker.pop("battle_atk_boost", 0)
@@ -718,6 +810,9 @@ def _resolve_npc_round(room, pending, p_dice, e_dice, socketio, room_id):
             already = gym_data.get("already_beaten", False)
             badge = gym["badge"] if not already else None
             reward = gym["reward"] if not already else gym["reward"] // 2
+            # double_gym_reward: gambler doubles first-win reward
+            if not already and ability_id == "double_gym_reward":
+                reward *= 2
             if badge and badge not in attacker["badges"]:
                 attacker["badges"].append(badge)
                 attacker["money"] += reward
@@ -727,6 +822,9 @@ def _resolve_npc_round(room, pending, p_dice, e_dice, socketio, room_id):
                 round_log += f" +{reward} เงิน"
         elif original_type == "rocket":
             stolen = random.randint(3, 8)
+            # rocket_bounty: officer gets extra money
+            if ability_id == "rocket_bounty":
+                stolen += cls.get("ability_params", {}).get("bonus", 0)
             attacker["money"] += stolen
             round_log += f" ปล้นได้ {stolen} เงิน!"
     else:

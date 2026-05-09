@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PokéBoard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
@@ -68,14 +70,20 @@
       <!-- floating player cards (top-right) -->
       <div class="players-wrap" id="players-wrap"></div>
 
+      <!-- side action panel (between right player cards) -->
+      <div id="side-btns" class="side-btns hidden">
+        <button class="btn btn-primary btn-sm hidden" id="btn-roll" onclick="doRoll()">🎲 ทอย</button>
+        <button class="btn btn-secondary btn-sm" id="btn-bag" onclick="showUseItemModal()">🎒 กระเป๋า</button>
+        <button class="btn btn-warning btn-sm" id="btn-ability" onclick="showAbilityModal()">⚡ ความสามารถ</button>
+      </div>
+
       <!-- floating log (bottom-center) -->
       <div class="log-panel" id="log-panel"></div>
 
       <!-- action bar (bottom) -->
       <div class="action-bar">
-        <div class="action-bar-left">
-          <button class="btn btn-primary btn-sm hidden" id="btn-roll" onclick="doRoll()">🎲 ทอยเต๋า</button>
-        </div>
+        <div class="action-bar-left"></div>
+        <div id="action-pokemon-info" class="action-pokemon-info" style="display:none;"></div>
         <div class="action-bar-center">
           <span class="action-bar-title" id="action-title">รอการทอยเต๋า...</span>
           <div class="action-btns" id="action-btns"></div>
@@ -102,19 +110,38 @@
 
 <!-- ── BATTLE SCREEN ── -->
 <div id="battle-overlay" class="hidden">
-  <div class="battle-screen">
-    <div class="battle-screen-title">⚔️ การต่อสู้</div>
-    <div class="battle-arena">
-      <div class="battle-side" id="battle-attacker"></div>
-      <div class="battle-vs-badge">VS</div>
-      <div class="battle-side" id="battle-defender"></div>
+  <div class="ba-screen">
+    <!-- Arena: sky + ground, 4 absolutely positioned elements -->
+    <div class="ba-arena">
+      <!-- Enemy HP box (top-left) -->
+      <div class="ba-hpbox ba-hpbox-enemy">
+        <div class="ba-hp-name" id="ba-enemy-name">—</div>
+        <div class="ba-hp-atk" id="ba-enemy-atk">ATK —</div>
+        <div class="ba-hp-track"><div class="ba-hp-fill" id="ba-enemy-hp-fill"></div></div>
+      </div>
+      <!-- Enemy sprite (top-right, front-facing) -->
+      <div class="ba-sprite-wrap ba-enemy-sprite" id="battle-defender"></div>
+      <!-- Player sprite (bottom-left, back-facing) -->
+      <div class="ba-sprite-wrap ba-player-sprite" id="battle-attacker"></div>
+      <!-- Player HP box (bottom-right) -->
+      <div class="ba-hpbox ba-hpbox-player">
+        <div class="ba-hp-name" id="ba-player-name">—</div>
+        <div class="ba-hp-atk" id="ba-player-atk">ATK —</div>
+        <div class="ba-hp-track"><div class="ba-hp-fill" id="ba-player-hp-fill"></div></div>
+        <div class="ba-hp-num" id="ba-player-hp-num">— / —</div>
+      </div>
     </div>
-    <div id="battle-log" class="battle-log"></div>
-    <div style="margin-top:12px;text-align:center;display:flex;gap:10px;justify-content:center;">
-      <button class="btn btn-danger hidden" id="btn-battle-roll" onclick="doBattleRoll()" style="font-size:1.05rem;padding:12px 32px;">🎲 ทอยเต๋า!</button>
-      <button class="btn btn-secondary hidden" id="btn-battle-surrender" onclick="doBattleSurrender()" style="padding:12px 20px;">🏳 ยอมแพ้</button>
+    <!-- Bottom: dialogue box + action menu -->
+    <div class="ba-bottom">
+      <div class="ba-dialogue">
+        <div class="ba-log" id="battle-log"></div>
+        <div class="ba-status" id="battle-status"></div>
+      </div>
+      <div class="ba-actions">
+        <button class="ba-btn-fight hidden" id="btn-battle-roll" onclick="doBattleRoll()">FIGHT</button>
+        <button class="ba-btn-run hidden" id="btn-battle-surrender" onclick="doBattleSurrender()">RUN</button>
+      </div>
     </div>
-    <div id="battle-status" class="battle-status-text"></div>
   </div>
 </div>
 

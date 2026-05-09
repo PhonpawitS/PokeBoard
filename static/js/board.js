@@ -4,13 +4,14 @@
 // tile 20-30: bottom row (col 11-1, row 11)
 // tile 31-39: left col   (col 1, row 10-2)
 
+const _PB = '<span class="pokeball-icon"></span>';
 const TILE_ICONS = {
   start:       "🏁",
-  wild:        "🌿",
-  wild_green:  "🌿",
-  wild_blue:   "🌊",
-  wild_purple: "🔮",
-  wild_red:    "🔥",
+  wild:        _PB,
+  wild_green:  _PB,
+  wild_blue:   _PB,
+  wild_purple: _PB,
+  wild_red:    _PB,
   gym:         "🏟",
   event:       "❓",
   rocket:      "🚀",
@@ -109,7 +110,7 @@ function initBoard(boardData) {
     el.style.gridColumn = pos.col;
     el.innerHTML = `
       <span class="tile-num">${tile.id}</span>
-      <span style="font-size:1rem;">${TILE_ICONS[tile.type] || "⬜"}</span>
+      <span class="tile-icon">${TILE_ICONS[tile.type] || "⬜"}</span>
       <span class="tile-label">${tile.label}</span>
       <div class="tokens" id="tokens-${tile.id}"></div>
     `;

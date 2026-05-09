@@ -167,6 +167,7 @@ function doEndGame() {
 // ── Dice timing ──────────────────────────────────────────────────
 window._tokenAnimating = false;
 window._pendingModal   = null;
+let _pendingEventCard  = null;
 
 const DICE_MIN_MS = 2000;
 
@@ -238,7 +239,31 @@ socket.on("battle_round_result", (data) => {
 
 socket.on("event_card", (data) => {
   _eventCardOwnerPid = data.pid;
-  showEventCard(data.player_name, data.event, data.pid === SESSION.pid);
+  if (window._tokenAnimating) {
+    _pendingEventCard = data;
+  } else {
+    showEventCard(data.player_name, data.event, data.pid === SESSION.pid);
+  }
+});
+
+socket.on("ability_scan_result", (data) => {
+  if (data.pid !== SESSION.pid) return;
+  const allPk = [...(data.pokemon || []), ...(data.fainted || []).map(p => ({ ...p, _fainted: true }))];
+  const rows = allPk.map(pk => {
+    const spriteUrl = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pk.sprite_id}.png`;
+    const faintedStyle = pk._fainted ? "opacity:.4;" : "";
+    return `<div class="pk-detail-row" style="${faintedStyle}">
+      <img class="pk-detail-sprite" src="${spriteUrl}" onerror="this.style.display='none'">
+      <div class="pk-detail-info">
+        <div class="pk-detail-name">${pk.name}${pk._fainted ? " 💀" : ""}</div>
+        <div class="pk-detail-stats">ATK ${pk.atk} · HP ${pk.hp ?? "?"}/${pk.max_hp ?? "?"} · ${pk.type || "Normal"}</div>
+      </div>
+    </div>`;
+  }).join("") || "<p style='color:#888;padding:8px;'>ไม่มีโปเกมอน</p>";
+  showModal(`🔬 สแกน: ${data.target_name}`,
+    `<div class="pk-detail-list">${rows}</div>`,
+    [{ text: "ปิด", cls: "btn-secondary" }]
+  );
 });
 
 // ── Game update ──────────────────────────────────────────────────
@@ -327,6 +352,12 @@ socket.on("game_update", async (state) => {
             const d = _pendingWildWatch;
             _pendingWildWatch = null;
             showWildWatchModal(d.player_name, d.pokemon);
+          }
+          if (_pendingEventCard) {
+            const d = _pendingEventCard;
+            _pendingEventCard = null;
+            _eventCardOwnerPid = d.pid;
+            showEventCard(d.player_name, d.event, d.pid === SESSION.pid);
           }
         });
       });

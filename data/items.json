@@ -1,10 +1,18 @@
 [
-  { "id": "poke_ball",   "name": "Poké Ball",   "icon": "🎾", "sprite_slug": "poke-ball",    "price": 2,  "type": "catch",  "catch_bonus": 0, "desc": "บอลจับโปเกมอน" },
-  { "id": "great_ball",  "name": "Great Ball",  "icon": "⭐", "sprite_slug": "great-ball",   "price": 5,  "type": "catch",  "catch_bonus": 2, "desc": "+2 catch rate" },
-  { "id": "ultra_ball",  "name": "Ultra Ball",  "icon": "🟡", "sprite_slug": "ultra-ball",   "price": 8,  "type": "catch",  "catch_bonus": 4, "desc": "+4 catch rate" },
-  { "id": "potion",      "name": "Potion",      "icon": "💊", "sprite_slug": "potion",       "price": 5,  "type": "use_hp", "desc": "ฟื้น HP โปเกมอน 1 ตัว (ใช้จากกระเป๋า)" },
-  { "id": "rare_candy",  "name": "Rare Candy",  "icon": "🍬", "sprite_slug": "rare-candy",   "price": 10, "type": "use_atk","desc": "+1 ATK โปเกมอน 1 ตัว (อาจวิวัฒนาการ!)" },
-  { "id": "speed_boots", "name": "Speed Boots", "icon": "👟", "sprite_slug": "power-anklet", "price": 6,  "type": "use_now","effect": "bonus_steps",       "effect_val": 1, "desc": "+1 ช่องเดินในเทิร์นนี้" },
-  { "id": "x_attack",    "name": "X Attack",    "icon": "⚡", "sprite_slug": "x-attack",     "price": 6,  "type": "use_now","effect": "battle_atk_boost",  "effect_val": 3, "desc": "+3 ATK ในการต่อสู้ครั้งนี้" },
-  { "id": "escape_rope", "name": "Escape Rope", "icon": "🪢", "sprite_slug": "escape-rope",  "price": 4,  "type": "use_now","effect": "escape",             "desc": "วาร์ปไป Pokémon Center ใกล้ที่สุด" }
+  { "id": "poke_ball",    "name": "Poké Ball",    "icon": "🎾", "sprite_slug": "poke-ball",     "price": 2,  "type": "catch",      "catch_bonus": 0, "desc": "บอลจับโปเกมอน" },
+  { "id": "great_ball",   "name": "Great Ball",   "icon": "⭐", "sprite_slug": "great-ball",    "price": 5,  "type": "catch",      "catch_bonus": 2, "desc": "+2 catch rate" },
+  { "id": "ultra_ball",   "name": "Ultra Ball",   "icon": "🟡", "sprite_slug": "ultra-ball",    "price": 8,  "type": "catch",      "catch_bonus": 4, "desc": "+4 catch rate" },
+  { "id": "potion",       "name": "Potion",       "icon": "💊", "sprite_slug": "potion",        "price": 5,  "type": "use_hp",                       "desc": "ฟื้น HP โปเกมอน 1 ตัวให้เต็ม" },
+  { "id": "super_potion", "name": "Super Potion", "icon": "💙", "sprite_slug": "super-potion",  "price": 8,  "type": "use_hp",                       "desc": "ฟื้น HP โปเกมอน 1 ตัวให้เต็ม (ซื้อที่ร้าน)" },
+  { "id": "revive",       "name": "Revive",       "icon": "💫", "sprite_slug": "revive",        "price": 12, "type": "use_revive",                   "desc": "ฟื้นโปเกมอนที่แพ้กลับมาที่ HP ครึ่งหนึ่ง" },
+  { "id": "rare_candy",   "name": "Rare Candy",   "icon": "🍬", "sprite_slug": "rare-candy",    "price": 10, "type": "use_atk",                      "desc": "+1 ATK โปเกมอน 1 ตัว (อาจวิวัฒนาการ!)" },
+  { "id": "moon_stone",   "name": "Moon Stone",   "icon": "🌙", "sprite_slug": "moon-stone",    "price": 15, "type": "use_evolve",                   "desc": "บังคับวิวัฒนาการทันที (ไม่ต้องการ ATK)" },
+  { "id": "elixir",       "name": "Elixir",       "icon": "🫙", "sprite_slug": "elixir",        "price": 10, "type": "use_now",    "effect": "heal_party_hp", "effect_val": 5, "desc": "ฟื้น HP ทุกตัว +5" },
+  { "id": "dire_hit",     "name": "Dire Hit",     "icon": "🎯", "sprite_slug": "dire-hit",      "price": 8,  "type": "use_now",    "effect": "battle_atk_boost", "effect_val": 5, "desc": "+5 ATK ต่อสู้ครั้งนี้ (แรงกว่า X Attack)" },
+  { "id": "nugget",       "name": "Nugget",       "icon": "🪙", "sprite_slug": "nugget",        "price": 0,  "type": "use_now",    "effect": "sell",  "effect_val": 15, "desc": "ขายได้ +15 เงิน ทันที" },
+  { "id": "speed_boots",  "name": "Speed Boots",  "icon": "👟", "sprite_slug": "power-anklet",  "price": 6,  "type": "use_now",    "effect": "bonus_steps", "effect_val": 1, "desc": "+1 ช่องเดินในเทิร์นนี้" },
+  { "id": "x_attack",     "name": "X Attack",     "icon": "⚡", "sprite_slug": "x-attack",      "price": 6,  "type": "use_now",    "effect": "battle_atk_boost", "effect_val": 3, "desc": "+3 ATK ในการต่อสู้ครั้งนี้" },
+  { "id": "x_defend",     "name": "X Defend",     "icon": "🛡", "sprite_slug": "x-defend",      "price": 6,  "type": "use_now",    "effect": "battle_def_boost", "effect_val": 2, "desc": "ลดความเสียหายที่รับ -2 ในการต่อสู้ครั้งนี้" },
+  { "id": "guard_spec",   "name": "Guard Spec.",  "icon": "🔰", "sprite_slug": "guard-spec",    "price": 7,  "type": "use_now",    "effect": "faint_shield",     "effect_val": 1, "desc": "ป้องกันไม่ให้โปเกมอน Faint ใน 1 การต่อสู้" },
+  { "id": "escape_rope",  "name": "Escape Rope",  "icon": "🪢", "sprite_slug": "escape-rope",   "price": 4,  "type": "use_now",    "effect": "escape",           "desc": "วาร์ปไป Pokémon Center ใกล้ที่สุด" }
 ]

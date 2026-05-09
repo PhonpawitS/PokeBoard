@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c ' *)",
+      "Bash(python -c \"import sys; sys.path.insert\\(0, 'd:/pokeboard'\\); from game import engine, battle; print\\('OK'\\); print\\('HP ATK3:', battle.pokemon_max_hp\\(3\\)\\); print\\('type adv Fire>Grass:', battle.get_type_advantage\\('Fire','Grass'\\)\\); print\\('type adv Fire>Water:', battle.get_type_advantage\\('Fire','Water'\\)\\)\")",
+      "WebSearch"
+    ]
+  }
+}

@@ -110,7 +110,7 @@ def register_debug_events(socketio):
     def on_force_fight(data):
         room_id = (data.get("room_id") or "").upper()
         room = state.get_room(room_id)
-        if not room:
+        if not room or room["phase"] != "playing":
             return
 
         pid1 = data.get("pid1")  # attacker
@@ -121,69 +121,86 @@ def register_debug_events(socketio):
             return
         player1 = room["players"][pid1]
 
-        # Resolve defender: try pid → name → index
-        pid2 = None
-        if opp in room["players"]:
-            pid2 = opp
+        # Resolve optional opponent (for enemy stats only — fight is always NPC-style)
+        player2 = None
+        pid2_resolved = None
+        if opp in room["players"] and opp != pid1:
+            pid2_resolved = opp
         else:
             try:
                 idx = int(opp)
                 others = [p for p in room["players"] if p != pid1]
                 if 0 <= idx < len(others):
-                    pid2 = others[idx]
+                    pid2_resolved = others[idx]
             except (TypeError, ValueError):
                 pass
-        if pid2 is None:
-            # try case-insensitive name match
+        if pid2_resolved is None:
             for p_id, p in room["players"].items():
-                if p["name"].lower() == str(opp).lower():
-                    pid2 = p_id
+                if p_id != pid1 and p["name"].lower() == str(opp).lower():
+                    pid2_resolved = p_id
                     break
-        if pid2 is None or pid2 == pid1:
-            return
-        player2 = room["players"][pid2]
+        if pid2_resolved:
+            player2 = room["players"][pid2_resolved]
 
-        # Ensure both have at least one pokemon
+        # Ensure attacker has at least one pokemon
         pokemon_map = {p["id"]: p for p in loader.get("pokemon")}
-        for pl in (player1, player2):
-            if not pl["pokemon"]:
-                pk = dict(pokemon_map.get("pikachu", loader.get("pokemon")[0]))
-                battle.init_pokemon_hp(pk)
-                pl["pokemon"].append(pk)
+        if not player1["pokemon"]:
+            pk = dict(pokemon_map.get("pikachu", loader.get("pokemon")[0]))
+            battle.init_pokemon_hp(pk)
+            player1["pokemon"].append(pk)
 
-        # Pick pokemon with highest ATK for each
         pk1 = max(player1["pokemon"], key=lambda p: p.get("atk", 0))
-        pk2 = max(player2["pokemon"], key=lambda p: p.get("atk", 0))
 
+        # Build enemy from opponent's pokemon (if found) or a default Pikachu
+        if player2 and player2["pokemon"]:
+            pk2 = max(player2["pokemon"], key=lambda p: p.get("atk", 0))
+            enemy_name = f"{player2['name']} (debug)"
+            enemy_pokemon_name = pk2["name"]
+            enemy_sprite_id = pk2.get("sprite_id")
+            enemy_atk = pk2["atk"]
+        else:
+            default_pk = pokemon_map.get("pikachu", loader.get("pokemon")[0])
+            enemy_name = "Debug Opponent"
+            enemy_pokemon_name = default_pk["name"]
+            enemy_sprite_id = default_pk.get("sprite_id")
+            enemy_atk = default_pk.get("atk", 3)
+
+        enemy_type = (pk2.get("type", "Normal") if player2 and player2["pokemon"] else "Normal")
+        enemy_hp = battle.pokemon_max_hp(enemy_atk)
+        enemy_info = {
+            "name": enemy_name,
+            "pokemon_name": enemy_pokemon_name,
+            "sprite_id": enemy_sprite_id,
+            "atk": enemy_atk,
+            "pokemon_type": enemy_type,
+        }
+
+        # Use NPC-style battle so only attacker needs to roll (no waiting for second browser)
         room["pending"] = {
             "type": "battle_ongoing",
             "pid": pid1,
             "data": {
-                "original_type": "pvp",
+                "original_type": "rocket",
                 "pid_atk": pid1,
-                "pid_def": pid2,
+                "pid_def": None,
                 "atk_pokemon_id": pk1["id"],
-                "def_pokemon_id": pk2["id"],
-                "enemy_info": {
-                    "name": player2["name"],
-                    "pokemon_name": pk2["name"],
-                    "sprite_id": pk2.get("sprite_id"),
-                    "atk": pk2["atk"],
-                    "hp": pk2.get("hp"),
-                    "max_hp": pk2.get("max_hp"),
-                    "is_pvp": True,
-                },
+                "def_pokemon_id": None,
+                "enemy_info": enemy_info,
+                "enemy_hp": enemy_hp,
+                "enemy_max_hp": enemy_hp,
                 "gym_data": None,
-                "rocket_data": None,
+                "rocket_data": {"grunt_atk": enemy_atk, "grunt_pokemon": {
+                    "name": enemy_pokemon_name, "sprite_id": enemy_sprite_id, "type": enemy_type,
+                }},
                 "round_rolls": {},
             },
         }
 
-        state.add_log(room, f"[DEBUG] ⚔️ Force fight: {player1['name']} ({pk1['name']}) vs {player2['name']} ({pk2['name']})")
+        state.add_log(room, f"[DEBUG] ⚔️ Fight: {player1['name']} ({pk1['name']}) vs {enemy_name} ({enemy_pokemon_name} ATK{enemy_atk})")
 
         socketio.emit("battle_start", {
             "attacker_pid": pid1,
-            "defender_pid": pid2,
+            "defender_pid": None,
             "attacker_name": player1["name"],
             "attacker_pokemon": {
                 "name": pk1["name"],
@@ -192,15 +209,7 @@ def register_debug_events(socketio):
                 "hp": pk1.get("hp"),
                 "max_hp": pk1.get("max_hp"),
             },
-            "defender": {
-                "name": player2["name"],
-                "pokemon_name": pk2["name"],
-                "sprite_id": pk2.get("sprite_id"),
-                "atk": pk2["atk"],
-                "hp": pk2.get("hp"),
-                "max_hp": pk2.get("max_hp"),
-                "is_pvp": True,
-            },
+            "defender": {**enemy_info, "hp": enemy_hp, "max_hp": enemy_hp},
         }, room=room_id)
         _broadcast(socketio, data, room)
 

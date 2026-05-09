@@ -1,22 +1,198 @@
-Debug Commands (browser console)
-เปิด DevTools แล้วพิมพ์:
+================================================================
+  PokéBoard — Debug Commands (Browser Console)
+================================================================
+เปิด DevTools (F12) → แท็บ Console แล้วพิมพ์คำสั่งด้านล่าง
+ทุกคำสั่งต้องใช้ขณะเกมอยู่ในสถานะ "playing" เท่านั้น
+(ยกเว้น debug.players() และ debug.state() ที่ดูได้ตลอด)
 
-Command	ทำอะไร
-debug.money(200)	เพิ่มเงินให้ตัวเอง 200
-debug.pokemon("charizard")	รับ Charizard (หรือ id อื่นจาก pokemon.json)
-debug.pokemon()	รับ pokemon สุ่ม
-debug.item("great_ball")	รับ great_ball
-debug.tp(13)	ย้ายไปช่อง 13 (Misty's gym)
-debug.tile()	trigger event ของช่องที่ยืนอยู่
-debug.turn()	บังคับให้เป็นเทิร์นของตัวเอง
-debug.faint()	faint โปเกมอนทั้งหมด
-debug.revive()	ฟื้นโปเกมอนทั้งหมด
-debug.clear()	ล้าง pending state → เดินเทิร์นต่อ
-debug.state()	ดู state ปัจจุบันใน console
-debug.ball(3)   // ได้ poke_ball 3 ใบ
-debug.gball(2)  // ได้ great_ball 2 ใบ
-debug.players() // ดูรายชื่อผู้เล่นก่อน (ดู index, pid, ชื่อ)
-debug.fight(0) // สู้กับผู้เล่นคนที่ 0 (ใช้ index)
-debug.fight("Alice") // สู้กับ "Alice" (ใช้ชื่อ ไม่ต้องแม่นพิมพ์ใหญ่เล็ก)
-debug.fight("a1b2c3d4") // สู้กับ pid โดยตรง
-debug.fight("Alice", "myPidHere") // กำหนด attacker ด้วย (สู้แทน pid อื่น)
+================================================================
+  1. MONEY — เงิน
+================================================================
+
+debug.money()          → เพิ่มเงิน 50 (ค่า default)
+debug.money(200)       → เพิ่มเงิน 200
+debug.money(-30)       → ลดเงิน 30
+
+================================================================
+  2. POKEMON — โปเกมอน
+================================================================
+
+debug.pokemon()                → รับโปเกมอนสุ่ม 1 ตัว
+debug.pokemon("pikachu")       → รับ Pikachu (ATK 3)
+debug.pokemon("charizard")     → รับ Charizard (ATK 6) — แนะนำสำหรับทดสอบต่อสู้
+debug.pokemon("alakazam")      → รับ Alakazam (ATK 7) — แรงสุดในเกม
+debug.pokemon("bulbasaur")     → รับ Bulbasaur (ATK 2)
+debug.pokemon("magikarp")      → รับ Magikarp (ATK 0) — ลองทดสอบเมื่อแพ้ง่าย
+
+Pokemon IDs ทั้งหมด (ใช้ตัวพิมพ์เล็ก):
+  ATK 0 : magikarp
+  ATK 1 : caterpie, weedle, pidgey, rattata, spearow, jigglypuff,
+           meowth, nidoran-f, nidoran-m, oddish, paras, venonat,
+           bellsprout, tentacool, zubat, poliwag
+  ATK 2 : bulbasaur, charmander, squirtle, ekans, sandshrew,
+           clefairy, vulpix, psyduck, mankey, growlithe, geodude,
+           ponyta, slowpoke, nidorina, nidorino, rattata(evo),
+           diglett, butterfree, golduck, weepinbell, gloom
+  ATK 3 : pikachu, abra, beedrill, golbat, ivysaur, charmeleon,
+           wartortle, fearow, parasect, venomoth, machoke,
+           graveler, arbok, persian, wigglytuff, clefable
+  ATK 4 : sandslash, nidoqueen, nidoking, ninetales, vileplume,
+           primeape, dugtrio, poliwrath, victreebel, tentacruel,
+           golem, rapidash, golduck, pidgeot
+  ATK 5 : venusaur, blastoise, raichu, kadabra, golem, nidoking
+  ATK 6 : charizard, arcanine, machamp
+  ATK 7 : alakazam
+
+================================================================
+  3. ITEMS — ไอเทม
+================================================================
+
+debug.item("poke_ball")    → รับ Poké Ball (จับโปเกมอน)
+debug.item("great_ball")   → รับ Great Ball (+2 catch bonus)
+debug.item("ultra_ball")   → รับ Ultra Ball (+4 catch bonus)
+debug.item("potion")       → รับ Potion (ฟื้น HP โปเกมอน 1 ตัว)
+debug.item("rare_candy")   → รับ Rare Candy (+1 ATK / อาจวิวัฒนาการ)
+debug.item("speed_boots")  → รับ Speed Boots (+1 ช่องเดินเทิร์นนี้)
+debug.item("x_attack")     → รับ X Attack (+3 ATK ในการต่อสู้ครั้งนี้)
+debug.item("escape_rope")  → รับ Escape Rope (วาร์ปไป PkmnCenter ใกล้ที่สุด)
+
+ลัดสำหรับ Ball:
+debug.ball(3)     → รับ Poké Ball 3 ใบ
+debug.ball()      → รับ Poké Ball 1 ใบ
+debug.gball(2)    → รับ Great Ball 2 ใบ
+debug.gball()     → รับ Great Ball 1 ใบ
+
+================================================================
+  4. TELEPORT — ย้ายตำแหน่ง
+================================================================
+
+debug.tp(0)   → START (ผ่าน Go +6 เงิน)
+debug.tp(5)   → Gym: Brock     (ATK 4,  รางวัล 10)
+debug.tp(8)   → Rocket!        (Grunt ATK 3-6)
+debug.tp(10)  → PkmnCenter     (ฟื้น HP + ร้านค้า)
+debug.tp(13)  → Gym: Misty     (ATK 6,  รางวัล 14)
+debug.tp(15)  → Rocket!        (Grunt ATK 4-8)
+debug.tp(19)  → Gym: Lt.Surge  (ATK 8,  รางวัล 18)
+debug.tp(20)  → PkmnCenter
+debug.tp(23)  → Gym: Erika     (ATK 10, รางวัล 22)
+debug.tp(25)  → Rocket!        (Grunt ATK 5-10)
+debug.tp(29)  → Gym: Sabrina   (ATK 14, รางวัล 32)
+debug.tp(30)  → PkmnCenter
+debug.tp(33)  → Gym: Blaine    (ATK 16, รางวัล 40)
+debug.tp(35)  → Rocket!        (Grunt ATK 7-14)
+debug.tp(39)  → Gym: Giovanni  (ATK 20, รางวัล 50)
+
+================================================================
+  5. TILE — trigger event ของช่องปัจจุบัน
+================================================================
+
+debug.tile()
+  → เรียก event ของช่องที่ตัวเองยืนอยู่ทันที
+  → ใช้ร่วมกับ debug.tp() เพื่อ trigger ยิม/Rocket/Wild ตามต้องการ
+
+ตัวอย่าง: ทดสอบยิม Misty
+  debug.tp(13)   // ย้ายไปช่องยิม Misty
+  debug.tile()   // trigger ยิม
+
+================================================================
+  6. TURN — จัดการเทิร์น
+================================================================
+
+debug.turn()
+  → บังคับให้เป็นเทิร์นของตัวเอง (ใช้เมื่อไม่ใช่เทิร์นตัวเอง)
+  → ล้าง pending ด้วย
+
+debug.clear()
+  → ล้าง pending state ปัจจุบัน + เลื่อนเทิร์นไปคนถัดไป
+  → ใช้เมื่อ action ค้างอยู่ (เช่น modal ไม่ยอมปิด)
+
+================================================================
+  7. POKEMON HP — HP โปเกมอน
+================================================================
+
+debug.faint()
+  → faint โปเกมอนทุกตัวของตัวเองทันที
+  → ใช้ทดสอบ PkmnCenter / เดินต่อไม่มีโปเกมอน
+
+debug.revive()
+  → ฟื้นโปเกมอนที่ faint ทั้งหมดกลับมา HP เต็ม
+
+================================================================
+  8. FIGHT — ทดสอบการต่อสู้
+================================================================
+
+debug.fight()
+  → เปิดหน้าต่อสู้กับ Debug Opponent (Pikachu ATK 3) ทันที
+  → เหมาะสำหรับทดสอบคนเดียว — กด "ทอยเต๋า!" เองได้เลย
+  → ต้องมีโปเกมอนอย่างน้อย 1 ตัว (หรือระบบจะเพิ่ม Pikachu ให้)
+
+debug.fight(0)
+  → สู้กับผู้เล่นคนอื่นโดยใช้ index (0 = คนแรกที่ไม่ใช่ตัวเอง)
+  → ศัตรูจะใช้สถิติโปเกมอนของผู้เล่นคนนั้น
+  → ยังคงเป็น NPC-mode (กดทอยได้คนเดียว)
+
+debug.fight("Alice")
+  → สู้โดยระบุชื่อผู้เล่น (ไม่สนตัวพิมพ์ใหญ่เล็ก)
+
+debug.fight("a1b2c3")
+  → สู้โดยระบุ pid โดยตรง (ดู pid ได้จาก debug.players())
+
+debug.fight(0, "myPid")
+  → กำหนด attacker เป็น pid อื่น (ทดสอบแทนผู้เล่นอื่น)
+
+หมายเหตุ: debug.fight ใช้ NPC-mode เสมอ (ไม่ต้องรอให้อีกฝ่ายทอย)
+
+================================================================
+  9. PLAYERS / STATE — ดูข้อมูล
+================================================================
+
+debug.players()
+  → แสดงตาราง: index, pid, name, class, pokemon, money
+  → ใช้ก่อน debug.fight() เพื่อดู index/pid ของผู้เล่นคนอื่น
+
+debug.state()
+  → แสดง state ทั้งหมดใน console:
+     - pending action ปัจจุบัน
+     - เทิร์นปัจจุบัน (current_turn, turn_order)
+     - ข้อมูลผู้เล่นทุกคน (pokemon, items, money, badges)
+
+================================================================
+  QUICK RECIPES — สูตรทดสอบด่วน
+================================================================
+
+[ทดสอบการต่อสู้ NPC]
+  debug.pokemon("charizard")   // รับ Charizard
+  debug.fight()                // เปิดการต่อสู้ทันที
+
+[ทดสอบยิม Giovanni (ยากสุด)]
+  debug.pokemon("alakazam")    // รับโปเกมอนแรงๆ
+  debug.money(100)             // เติมเงิน
+  debug.tp(39)                 // ย้ายไปยิม Giovanni
+  debug.tile()                 // trigger ยิม
+
+[ทดสอบวิวัฒนาการ]
+  debug.pokemon("charmander")  // รับ Charmander (ATK 2)
+  debug.item("rare_candy")     // รับ Rare Candy
+  debug.item("rare_candy")     // (ต้องการ 2 ใบ: ATK 2→3→วิวัฒนาการเป็น Charmeleon)
+
+[ทดสอบ PkmnCenter + Shop]
+  debug.faint()                // faint โปเกมอนทั้งหมด
+  debug.tp(10)                 // ย้ายไป PkmnCenter
+  debug.tile()                 // trigger Center (ฟื้น + เปิดร้าน)
+
+[รีเซ็ตเมื่อ action ค้าง]
+  debug.clear()                // ล้าง pending และเดินต่อ
+
+[ดู state แบบเต็ม]
+  debug.state()                // ดูทุกอย่างใน console
+
+================================================================
+  NOTES
+================================================================
+- ทุกคำสั่งใช้ได้เฉพาะเมื่อ phase = "playing" เท่านั้น
+  (ยกเว้น debug.players() และ debug.state())
+- คำสั่งทำงานกับ SESSION.pid ของตัวเอง เว้นแต่ระบุ pid อื่น
+- debug.fight() ล้าง pending เดิมและเริ่มการต่อสู้ทันที
+- หากต้องการทดสอบ steal_on_win (Rocket class) ให้เลือก
+  class "แก๊งร็อกเก็ต" แล้วใช้ debug.fight() ทดสอบ PvP ในเกมจริง
+================================================================

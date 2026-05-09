@@ -37,6 +37,7 @@ def _new_player(name, class_id):
     money = config.STARTING_MONEY
     if cls.get("ability_id") == "rich_start":
         money += cls.get("ability_params", {}).get("bonus", 0)
+    active = cls.get("ability_active", {})
     return {
         "name": name,
         "class_id": class_id,
@@ -48,6 +49,7 @@ def _new_player(name, class_id):
         "items": ["poke_ball"] * 6 + list(cls.get("starter_items", [])),
         "trainer_sprite": cls.get("trainer_sprite", ""),
         "skip_turns": 0,
+        "ability_charges": active.get("charges", 0),
     }
 
 

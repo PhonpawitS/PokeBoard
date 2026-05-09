@@ -550,11 +550,72 @@ function _clearTimers() {
   _diceTimers.length = 0;
 }
 
-function _cycleFace(elId, delay) {
+// ── 3D Dice ─────────────────────────────────────────────────────
+const _D3D_DOTS = {
+  1: [5],
+  2: [3, 7],
+  3: [3, 5, 7],
+  4: [1, 3, 7, 9],
+  5: [1, 3, 5, 7, 9],
+  6: [1, 3, 4, 6, 7, 9],
+};
+// cube transform to bring each face toward the camera
+const _D3D_FACE_ROT = {
+  1: [0,    0  ],
+  2: [90,   0  ],
+  3: [0,   -90 ],
+  4: [0,    90 ],
+  5: [-90,  0  ],
+  6: [0,    180],
+};
+
+function _d3dFaceHtml(faceNum, cls) {
+  const dots = _D3D_DOTS[faceNum];
+  let cells = "";
+  for (let i = 1; i <= 9; i++)
+    cells += dots.includes(i) ? `<div class="d3d-dot"></div>` : `<div></div>`;
+  return `<div class="d3d-face d3d-f${faceNum}${cls ? " " + cls : ""}">${cells}</div>`;
+}
+
+function _d3dHtml(id, faceCls) {
+  const faces = [1,2,3,4,5,6].map(n => _d3dFaceHtml(n, faceCls)).join("");
+  return `
+    <div class="dice-d3-container">
+      <div class="dice-3d-wrap">
+        <div class="dice-3d" id="${id}" data-rx="0" data-ry="0">${faces}</div>
+      </div>
+      <div class="dice-board-floor"></div>
+    </div>`;
+}
+
+function _roll3D(elId, speed) {
   if (!_diceRolling) return;
   const el = document.getElementById(elId);
-  if (el) el.textContent = String(Math.ceil(Math.random() * 6));
-  _diceTimers.push(setTimeout(() => _cycleFace(elId, Math.min(delay * 1.09, 230)), delay));
+  if (!el) return;
+  const rx = (parseFloat(el.dataset.rx) + 37) % 36000;
+  const ry = (parseFloat(el.dataset.ry) + 53) % 36000;
+  el.dataset.rx = rx; el.dataset.ry = ry;
+  el.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`;
+  _diceTimers.push(setTimeout(() => _roll3D(elId, speed), speed));
+}
+
+function _settle3D(elId, face, result) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const rx = parseFloat(el.dataset.rx) || 0;
+  const ry = parseFloat(el.dataset.ry) || 0;
+  const [bx, by] = _D3D_FACE_ROT[face];
+  const finalX = Math.ceil((rx + 180) / 360) * 360 + bx;
+  const finalY = Math.ceil((ry + 180) / 360) * 360 + by;
+  el.style.transition = "transform 0.75s cubic-bezier(0.15, 0.8, 0.35, 1)";
+  el.style.transform = `rotateX(${finalX}deg) rotateY(${finalY}deg)`;
+  if (result) {
+    const bg = result === "win" ? "#287028" : "#484848";
+    el.querySelectorAll(".d3d-face").forEach(f => {
+      f.style.background = bg;
+      f.style.opacity = result === "win" ? "1" : "0.55";
+    });
+  }
 }
 
 // single die — turn roll
@@ -563,13 +624,13 @@ function showDiceRolling(title, subtitle) {
   _clearTimers();
   const overlay = document.getElementById("dice-overlay");
   overlay.innerHTML = `
-    <div class="dice-card">
+    <div class="dice-board-scene">
       <div class="dice-title">${title}</div>
-      <div class="dice-face rolling" id="dface-main">1</div>
+      ${_d3dHtml("d3d-main", "")}
       <div class="dice-label" id="dlabel">${subtitle}</div>
     </div>`;
   overlay.classList.remove("hidden", "fade-out");
-  _cycleFace("dface-main", 55);
+  _roll3D("d3d-main", 16);
   _diceTimers.push(setTimeout(() => { if (_diceRolling) _hideDice(); }, 4000));
 }
 
@@ -577,12 +638,11 @@ function settleDice(value, extraLabel) {
   if (!_diceRolling) return Promise.resolve();
   _diceRolling = false;
   _clearTimers();
-  const face = document.getElementById("dface-main");
+  _settle3D("d3d-main", value, null);
   const label = document.getElementById("dlabel");
-  if (face) { face.textContent = String(value); face.className = "dice-face settling"; }
   if (label) label.textContent = extraLabel || `ได้ ${value}!`;
   return new Promise(resolve => {
-    setTimeout(() => { _hideDice(); setTimeout(resolve, 240); }, 1100);
+    setTimeout(() => { _hideDice(); setTimeout(resolve, 240); }, 1200);
   });
 }
 
@@ -592,24 +652,24 @@ function showBattleDice(playerName, enemyLabel) {
   _clearTimers();
   const overlay = document.getElementById("dice-overlay");
   overlay.innerHTML = `
-    <div class="dice-card">
+    <div class="dice-board-scene">
       <div class="dice-title">⚔️ การต่อสู้</div>
       <div class="battle-dice-row">
         <div class="battle-dice-col">
-          <div class="dice-face rolling" id="dface-player">1</div>
+          ${_d3dHtml("d3d-player", "")}
           <span class="battle-name">${playerName}</span>
         </div>
         <div class="vs-badge">VS</div>
         <div class="battle-dice-col">
-          <div class="dice-face rolling enemy" id="dface-enemy">1</div>
+          ${_d3dHtml("d3d-enemy", "enemy")}
           <span class="battle-name">${enemyLabel || "ศัตรู"}</span>
         </div>
       </div>
       <div class="dice-label" id="dlabel">กำลังต่อสู้...</div>
     </div>`;
   overlay.classList.remove("hidden", "fade-out");
-  _cycleFace("dface-player", 55);
-  _cycleFace("dface-enemy", 65);
+  _roll3D("d3d-player", 14);
+  _roll3D("d3d-enemy", 19);
   _diceTimers.push(setTimeout(() => { if (_diceRolling) _hideDice(); }, 5000));
 }
 
@@ -617,13 +677,11 @@ function settleBattleDice(pDice, eDice, pTotal, eTotal, won, extraMsg) {
   if (!_diceRolling) return Promise.resolve();
   _diceRolling = false;
   _clearTimers();
-  const pFace = document.getElementById("dface-player");
-  const eFace = document.getElementById("dface-enemy");
+  _settle3D("d3d-player", pDice, won ? "win" : "lose");
+  _settle3D("d3d-enemy",  eDice, won ? "lose" : "win");
   const label = document.getElementById("dlabel");
-  if (pFace) { pFace.textContent = String(pDice); pFace.className = `dice-face settling${won ? " win" : " lose"}`; }
-  if (eFace) { eFace.textContent = String(eDice); eFace.className = `dice-face enemy settling${won ? " lose" : " win"}`; }
   if (label) {
-    const base = won ? `🎉 ชนะ! (${pTotal} vs ${eTotal})` : `💀 แพ้... (${pTotal} vs ${eTotal})`;
+    const base = won ? `🎉 ชนะ! 🎲${pTotal} vs 🎲${eTotal}` : `💀 แพ้... 🎲${pTotal} vs 🎲${eTotal}`;
     label.innerHTML = extraMsg ? `${base}<br><span style="font-size:.85em">${extraMsg}</span>` : base;
     label.style.color = won ? "#2e7d32" : "#c62828";
   }

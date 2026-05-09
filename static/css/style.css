@@ -805,54 +805,91 @@ header {
   z-index: 150;
   pointer-events: none;
 }
-.dice-card {
-  background: var(--panel);
-  border: var(--px-b);
-  box-shadow: var(--px-sh);
-  padding: 20px 32px;
-  display: flex; flex-direction: column; align-items: center; gap: 10px;
-  animation: dice-card-in .18s steps(3) both;
+.dice-board-scene {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  animation: d3d-toss 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-#dice-overlay.fade-out .dice-card { animation: dice-card-out .18s steps(3) both; }
-.dice-title { font-size: .6rem; font-weight: 800; color: var(--yellow); font-family: 'Courier New', monospace; }
-.dice-face {
-  width: 80px; height: 80px;
+#dice-overlay.fade-out .dice-board-scene { animation: d3d-exit 0.22s ease-in both; }
+.dice-title {
+  font-size: .6rem; font-weight: 800; color: var(--yellow);
+  font-family: 'Courier New', monospace;
+  background: rgba(0,0,0,0.72); padding: 3px 10px; border-radius: 3px;
+}
+/* ── 3D Dice cube ── */
+.dice-d3-container {
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,0.75));
+}
+.dice-board-floor {
+  width: 58px; height: 14px;
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0.45) 0%, transparent 72%);
+  margin-top: -4px;
+}
+.dice-3d-wrap {
+  width: 90px; height: 90px;
+  perspective: 320px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 2.2rem; font-weight: 900; color: white; line-height: 1;
-  background: var(--red);
-  border: var(--px-b);
-  box-shadow: var(--px-sh);
-  font-family: 'Press Start 2P', monospace;
-  image-rendering: pixelated;
 }
-.dice-face.rolling  { animation: dice-shake .1s steps(2) infinite; }
-.dice-face.settling { animation: dice-bounce .32s steps(4) both; }
-.dice-face.win      { background: #287028; box-shadow: var(--px-sh); }
-.dice-face.lose     { background: #383838; opacity: .65; }
-.dice-face.enemy    { background: #282840; }
-.dice-face.enemy.win  { background: #287028; }
-.dice-face.enemy.lose { background: #383838; opacity: .65; }
-.dice-label { font-size: .62rem; font-weight: 700; color: #7898b8; font-family: 'Courier New', monospace; }
+.dice-3d {
+  width: 70px; height: 70px;
+  position: relative;
+  transform-style: preserve-3d;
+}
+.d3d-face {
+  position: absolute;
+  width: 70px; height: 70px;
+  background: var(--red);
+  border: 3px solid #000;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.18);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  padding: 8px;
+  gap: 2px;
+  box-sizing: border-box;
+}
+.d3d-face.enemy { background: #1e1e38; }
+.d3d-dot {
+  width: 12px; height: 12px;
+  background: #fff;
+  border-radius: 50%;
+  justify-self: center; align-self: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+.d3d-f1 { transform: translateZ(35px); }
+.d3d-f6 { transform: rotateY(180deg) translateZ(35px); }
+.d3d-f2 { transform: rotateX(-90deg) translateZ(35px); }
+.d3d-f5 { transform: rotateX( 90deg) translateZ(35px); }
+.d3d-f3 { transform: rotateY( 90deg) translateZ(35px); }
+.d3d-f4 { transform: rotateY(-90deg) translateZ(35px); }
+.dice-label {
+  font-size: .68rem; font-weight: 700; color: #e0e8ff;
+  font-family: 'Courier New', monospace;
+  background: rgba(0,0,0,0.72); padding: 4px 14px; border-radius: 3px;
+  text-align: center;
+}
 
-.battle-dice-row { display: flex; align-items: center; gap: 16px; }
-.battle-dice-col { display: flex; flex-direction: column; align-items: center; gap: 5px; }
-.battle-name { font-size: .58rem; font-weight: 700; color: #6878a0; max-width: 80px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.vs-badge    { font-size: .85rem; font-weight: 900; color: #606070; padding: 0 4px; font-family: 'Press Start 2P', monospace; }
+.battle-dice-row { display: flex; align-items: flex-end; gap: 20px; }
+.battle-dice-col { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.battle-name {
+  font-size: .56rem; font-weight: 700; color: #e0e8ff;
+  background: rgba(0,0,0,0.72); padding: 2px 8px; border-radius: 3px;
+  max-width: 90px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.vs-badge    { font-size: .85rem; font-weight: 900; color: #fff; padding: 0 4px; font-family: 'Press Start 2P', monospace; text-shadow: 0 2px 6px #000; margin-bottom: 36px; }
 
 .catch-bar-wrap { display: flex; align-items: center; gap: 8px; font-size: .65rem; color: #6070a0; }
 .catch-bar { height: 8px; background: #101018; border: 1px solid var(--border); width: 100px; overflow: hidden; }
 .catch-bar-fill { height: 100%; transition: width .3s steps(6); }
 
-@keyframes dice-card-in  { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: scale(1); } }
-@keyframes dice-card-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(.8); } }
-@keyframes dice-shake {
-  0%  { transform: rotate(-16deg); }
-  50% { transform: rotate(16deg); }
+@keyframes d3d-toss {
+  0%   { transform: translateY(-140px) scale(0.4) rotate(-8deg); opacity: 0; }
+  70%  { transform: translateY(10px) scale(1.04) rotate(2deg); opacity: 1; }
+  100% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
 }
-@keyframes dice-bounce {
-  0%   { transform: scale(.4); }
-  60%  { transform: scale(1.18); }
-  100% { transform: scale(1); }
+@keyframes d3d-exit {
+  from { transform: scale(1) translateY(0); opacity: 1; }
+  to   { transform: scale(0.7) translateY(30px); opacity: 0; }
 }
 
 /* ── SHOP ── */
